@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --scrollbar-track: #f8fafc; /* Slate 50 equivalent */
+  --scrollbar-thumb: #cbd5e1; /* Slate 300 equivalent */
+  --scrollbar-hover: #94a3b8; /* Slate 400 equivalent */
+}
+
+.dark {
+  --scrollbar-track: #020617; /* Slate 950 equivalent */
+  --scrollbar-thumb: #1e293b; /* Slate 800 equivalent */
+  --scrollbar-hover: #334155; /* Slate 700 equivalent */
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 transition-colors duration-200;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Custom premium scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 8px;
+  border: 2px solid var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-hover);
+}
+
+/* Smooth transition utility */
+.transition-custom {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}

@@ -550,6 +550,8 @@ export class GasP2TLRepository implements IP2TLRepository {
       stats: { todayCount: 0, monthCount: 0, yearCount: 0 },
       reasonsBreakdown: [],
       cumulativeReasonsBreakdown: [],
+      cumulativeOldMeterBreakdown: [],
+      cumulativePembMeterBreakdown: [],
       totalCumulativeFiltered: 0,
       availableYears: [curYear],
       appliedMonth: curMonth,

@@ -672,18 +672,42 @@ function doGet(e) {
       });
     }
 
-    // ── Calculate cumulative reasons breakdown (for the entire calendar year) ──
+    // ── Calculate cumulative/yearly breakdowns for the entire calendar year ──
     var cumulativeReasonsMap = {};
+    var cumulativeOldMeterMap = {};
+    var cumulativePembMeterMap = {};
     var totalCumulativeFiltered = 0;
+    
+    var idxMerkLama = colMap["MERK_METER_LAMA"];
+    var idxPembMeter = colMap["KDPEMBMETER"];
+
     for (var fi = 0; fi < allRows.length; fi++) {
       var item = allRows[fi];
       if (item._ry === targetYearInt && item._rm !== null) {
+        // Alasan
         var reason = "";
         if (idxAlasan !== -1) {
           reason = String(item.row[idxAlasan] || "").trim();
         }
         if (!reason) reason = "Lainnya";
         cumulativeReasonsMap[reason] = (cumulativeReasonsMap[reason] || 0) + 1;
+        
+        // Merk Meter Lama
+        var merkLama = "";
+        if (idxMerkLama !== -1) {
+          merkLama = String(item.row[idxMerkLama] || "").trim();
+        }
+        if (!merkLama) merkLama = "Lainnya";
+        cumulativeOldMeterMap[merkLama] = (cumulativeOldMeterMap[merkLama] || 0) + 1;
+
+        // Pembatas Meter (KDPEMBMETER)
+        var pembMeter = "";
+        if (idxPembMeter !== -1) {
+          pembMeter = String(item.row[idxPembMeter] || "").trim();
+        }
+        if (!pembMeter) pembMeter = "Lainnya";
+        cumulativePembMeterMap[pembMeter] = (cumulativePembMeterMap[pembMeter] || 0) + 1;
+
         totalCumulativeFiltered++;
       }
     }
@@ -695,6 +719,22 @@ function doGet(e) {
       }
     }
     cumulativeReasonsList.sort(function(a, b) { return b.count - a.count; });
+
+    var cumulativeOldMeterList = [];
+    for (var omk in cumulativeOldMeterMap) {
+      if (cumulativeOldMeterMap.hasOwnProperty(omk)) {
+        cumulativeOldMeterList.push({ reason: omk, count: cumulativeOldMeterMap[omk] });
+      }
+    }
+    cumulativeOldMeterList.sort(function(a, b) { return b.count - a.count; });
+
+    var cumulativePembMeterList = [];
+    for (var pmk in cumulativePembMeterMap) {
+      if (cumulativePembMeterMap.hasOwnProperty(pmk)) {
+        cumulativePembMeterList.push({ reason: pmk, count: cumulativePembMeterMap[pmk] });
+      }
+    }
+    cumulativePembMeterList.sort(function(a, b) { return b.count - a.count; });
 
     // ── Paginate ──
     var totalFiltered = filteredRows.length;
@@ -748,6 +788,8 @@ function doGet(e) {
       },
       reasonsBreakdown: reasonsList,
       cumulativeReasonsBreakdown: cumulativeReasonsList,
+      cumulativeOldMeterBreakdown: cumulativeOldMeterList,
+      cumulativePembMeterBreakdown: cumulativePembMeterList,
       totalCumulativeFiltered: totalCumulativeFiltered,
       availableYears: availableYears,
       appliedMonth: appliedMonth,

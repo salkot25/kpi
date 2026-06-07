@@ -137,6 +137,9 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
   const [stats, setStats] = useState({ todayCount: 0, monthCount: 0, yearCount: 0 });
   const [reasonsBreakdown, setReasonsBreakdown] = useState<Array<{ reason: string; count: number }>>([]);
   const [cumulativeReasonsBreakdown, setCumulativeReasonsBreakdown] = useState<Array<{ reason: string; count: number }>>([]);
+  const [cumulativeOldMeterBreakdown, setCumulativeOldMeterBreakdown] = useState<Array<{ reason: string; count: number }>>([]);
+  const [cumulativePembMeterBreakdown, setCumulativePembMeterBreakdown] = useState<Array<{ reason: string; count: number }>>([]);
+  const [compositionFilter, setCompositionFilter] = useState<'alasan' | 'merk_lama' | 'jenis_meter'>('alasan');
   const [totalCumulativeFiltered, setTotalCumulativeFiltered] = useState<number>(0);
   const [availableYears, setAvailableYears] = useState<string[]>([String(new Date().getFullYear())]);
 
@@ -316,6 +319,8 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
         });
         if (response.reasonsBreakdown) setReasonsBreakdown(response.reasonsBreakdown);
         if (response.cumulativeReasonsBreakdown) setCumulativeReasonsBreakdown(response.cumulativeReasonsBreakdown);
+        if (response.cumulativeOldMeterBreakdown) setCumulativeOldMeterBreakdown(response.cumulativeOldMeterBreakdown);
+        if (response.cumulativePembMeterBreakdown) setCumulativePembMeterBreakdown(response.cumulativePembMeterBreakdown);
         if (response.totalCumulativeFiltered !== undefined) setTotalCumulativeFiltered(response.totalCumulativeFiltered);
         if (response.availableYears) setAvailableYears(response.availableYears);
         if (response.dailyTrend) setDailyTrend(response.dailyTrend);
@@ -413,50 +418,52 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
         </div>
       )}
 
-      {/* ── SUMMARY STAT CARDS (always visible) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── SUMMARY STAT CARDS ── */}
+      {subTab !== 'target' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-        {/* Kinerja Harian */}
-        <div className={`p-5 ${colors.card} ${borderRadius.xl} border ${colors.border} flex items-center justify-between`}>
-          <div className="space-y-1">
-            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kinerja Harian</span>
-            <div className="text-xl font-black text-slate-800 dark:text-slate-50">{formatIndoNumber(stats.todayCount)} Unit</div>
-            <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Target: {formatIndoNumber(targetHarianCalculated)} Unit</div>
+          {/* Kinerja Harian */}
+          <div className={`p-5 ${colors.card} ${borderRadius.xl} border ${colors.border} flex items-center justify-between`}>
+            <div className="space-y-1">
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kinerja Harian</span>
+              <div className="text-xl font-black text-slate-800 dark:text-slate-50">{formatIndoNumber(stats.todayCount)} Unit</div>
+              <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Target: {formatIndoNumber(targetHarianCalculated)} Unit</div>
+            </div>
+            <ProgressRing percentage={harianPercent} colorClass={harianPercent >= 100 ? "text-emerald-500" : harianPercent >= 50 ? "text-amber-500" : "text-rose-500"} />
           </div>
-          <ProgressRing percentage={harianPercent} colorClass={harianPercent >= 100 ? "text-emerald-500" : harianPercent >= 50 ? "text-amber-500" : "text-rose-500"} />
-        </div>
 
-        {/* Kinerja Bulanan */}
-        <div className={`p-5 ${colors.card} ${borderRadius.xl} border ${colors.border} flex items-center justify-between`}>
-          <div className="space-y-1">
-            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kinerja Bulanan</span>
-            <div className="text-xl font-black text-slate-800 dark:text-slate-50">{formatIndoNumber(stats.monthCount)} Unit</div>
-            <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Target: {formatIndoNumber(targetPerBulan)} Unit ({MONTH_NAMES_ID[activeMonthIndex]})</div>
+          {/* Kinerja Bulanan */}
+          <div className={`p-5 ${colors.card} ${borderRadius.xl} border ${colors.border} flex items-center justify-between`}>
+            <div className="space-y-1">
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kinerja Bulanan</span>
+              <div className="text-xl font-black text-slate-800 dark:text-slate-50">{formatIndoNumber(stats.monthCount)} Unit</div>
+              <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Target: {formatIndoNumber(targetPerBulan)} Unit ({MONTH_NAMES_ID[activeMonthIndex]})</div>
+            </div>
+            <ProgressRing percentage={bulanPercent} colorClass={bulanPercent >= 70 ? "text-emerald-500" : "text-amber-500"} />
           </div>
-          <ProgressRing percentage={bulanPercent} colorClass={bulanPercent >= 70 ? "text-emerald-500" : "text-amber-500"} />
-        </div>
 
-        {/* Kinerja Semester */}
-        <div className={`p-5 ${colors.card} ${borderRadius.xl} border ${colors.border} flex items-center justify-between`}>
-          <div className="space-y-1">
-            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kinerja {semesterLabel}</span>
-            <div className="text-xl font-black text-slate-800 dark:text-slate-50">{formatIndoNumber(realSemester)} Unit</div>
-            <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Target: {formatIndoNumber(targetSemester)} Unit</div>
+          {/* Kinerja Semester */}
+          <div className={`p-5 ${colors.card} ${borderRadius.xl} border ${colors.border} flex items-center justify-between`}>
+            <div className="space-y-1">
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kinerja {semesterLabel}</span>
+              <div className="text-xl font-black text-slate-800 dark:text-slate-50">{formatIndoNumber(realSemester)} Unit</div>
+              <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Target: {formatIndoNumber(targetSemester)} Unit</div>
+            </div>
+            <ProgressRing percentage={semesterPercent} colorClass={semesterPercent >= 70 ? "text-emerald-500" : "text-amber-500"} />
           </div>
-          <ProgressRing percentage={semesterPercent} colorClass={semesterPercent >= 70 ? "text-emerald-500" : "text-amber-500"} />
-        </div>
 
-        {/* Kinerja Kumulatif */}
-        <div className={`p-5 ${colors.card} ${borderRadius.xl} border ${colors.border} flex items-center justify-between`}>
-          <div className="space-y-1">
-            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kinerja Kumulatif</span>
-            <div className="text-xl font-black text-slate-800 dark:text-slate-50">{formatIndoNumber(realKumulatif)} Unit</div>
-            <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Target: {formatIndoNumber(targetKumulatif)} Unit</div>
+          {/* Kinerja Kumulatif */}
+          <div className={`p-5 ${colors.card} ${borderRadius.xl} border ${colors.border} flex items-center justify-between`}>
+            <div className="space-y-1">
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kinerja Kumulatif</span>
+              <div className="text-xl font-black text-slate-800 dark:text-slate-50">{formatIndoNumber(realKumulatif)} Unit</div>
+              <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Target: {formatIndoNumber(targetKumulatif)} Unit</div>
+            </div>
+            <ProgressRing percentage={kumulatifPercent} colorClass={kumulatifPercent >= 70 ? "text-emerald-500" : "text-amber-500"} />
           </div>
-          <ProgressRing percentage={kumulatifPercent} colorClass={kumulatifPercent >= 70 ? "text-emerald-500" : "text-amber-500"} />
-        </div>
 
-      </div>
+        </div>
+      )}
 
       {subTab === 'ringkasan' && (
         <div className={`p-5 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md} space-y-4`}>
@@ -518,42 +525,72 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
 
           {/* Reasons Breakdown Chart */}
           <div className={`lg:col-span-4 p-6 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md} flex flex-col h-[380px]`}>
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-1 flex items-center gap-2">
-              <BarChart2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
-              <span>Komposisi Alasan</span>
-            </h3>
-            <p className="text-[10px] text-slate-505 dark:text-slate-400 font-semibold mb-4 pb-2 border-b border-slate-200 dark:border-slate-800">
-              Pemicu utama penggantian kWh meter
-            </p>
+            {(() => {
+              const activeBreakdown = compositionFilter === 'alasan'
+                ? cumulativeReasonsBreakdown
+                : compositionFilter === 'merk_lama'
+                  ? cumulativeOldMeterBreakdown
+                  : cumulativePembMeterBreakdown;
 
-            {cumulativeReasonsBreakdown.length === 0 ? (
-              <div className="flex-grow flex items-center justify-center py-12 text-slate-500 text-xs font-semibold text-center">
-                Tidak ada data untuk filter aktif.
-              </div>
-            ) : (
-              <div className="space-y-3 overflow-y-auto pr-1 flex-grow">
-                {cumulativeReasonsBreakdown.map((item, idx) => {
-                  const maxCount = cumulativeReasonsBreakdown[0]?.count || 1;
-                  const percent = totalCumulativeFiltered > 0 ? Math.round((item.count / totalCumulativeFiltered) * 100) : 0;
-                  return (
-                    <div key={item.reason} className="group">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <span className="text-[11px] font-semibold text-slate-755 dark:text-slate-300 leading-tight">{item.reason}</span>
-                        <span className="text-[11px] font-bold text-slate-555 dark:text-slate-400 whitespace-nowrap shrink-0">
-                          {item.count} <span className="text-emerald-500 dark:text-emerald-400">({percent}%)</span>
-                        </span>
-                      </div>
-                      <div className="h-2 w-full bg-slate-100 dark:bg-slate-950 rounded-full overflow-hidden border border-slate-200 dark:border-slate-850">
-                        <div
-                          className={`h-full bg-gradient-to-r ${BAR_COLORS[idx % BAR_COLORS.length]} rounded-full transition-all duration-500 group-hover:brightness-110`}
-                          style={{ width: `${(item.count / maxCount) * 100}%` }}
-                        />
-                      </div>
+              return (
+                <>
+                  <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-705 dark:text-slate-200 flex items-center gap-1.5">
+                      <BarChart2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                      <span>
+                        {compositionFilter === 'alasan' ? 'Komposisi Alasan' : 
+                         compositionFilter === 'merk_lama' ? 'Komposisi Meter Lama' : 'Komposisi Jenis Meter'}
+                      </span>
+                    </h3>
+                    
+                    <select
+                      value={compositionFilter}
+                      onChange={(e) => setCompositionFilter(e.target.value as any)}
+                      className="px-2 py-1 text-[10px] font-bold bg-slate-100 dark:bg-slate-955 border border-slate-250 dark:border-slate-850 rounded-lg outline-none text-slate-700 dark:text-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-custom"
+                    >
+                      <option value="alasan">Alasan</option>
+                      <option value="merk_lama">Meter Lama</option>
+                      <option value="jenis_meter">Jenis Meter</option>
+                    </select>
+                  </div>
+                  
+                  <p className="text-[10px] text-slate-505 dark:text-slate-400 font-semibold mb-4">
+                    {compositionFilter === 'alasan' ? 'Pemicu utama penggantian kWh meter' :
+                     compositionFilter === 'merk_lama' ? 'Distribusi merk meter lama yang diganti' :
+                     'Distribusi jenis meter (KDPEMBMETER)'}
+                  </p>
+
+                  {activeBreakdown.length === 0 ? (
+                    <div className="flex-grow flex items-center justify-center py-12 text-slate-500 text-xs font-semibold text-center">
+                      Tidak ada data untuk filter aktif.
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                  ) : (
+                    <div className="space-y-3 overflow-y-auto pr-1 flex-grow">
+                      {activeBreakdown.map((item, idx) => {
+                        const maxCount = activeBreakdown[0]?.count || 1;
+                        const percent = totalCumulativeFiltered > 0 ? Math.round((item.count / totalCumulativeFiltered) * 100) : 0;
+                        return (
+                          <div key={item.reason} className="group">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <span className="text-[11px] font-semibold text-slate-755 dark:text-slate-300 leading-tight">{item.reason}</span>
+                              <span className="text-[11px] font-bold text-slate-555 dark:text-slate-400 whitespace-nowrap shrink-0">
+                                {item.count} <span className="text-emerald-500 dark:text-emerald-400">({percent}%)</span>
+                              </span>
+                            </div>
+                            <div className="h-2 w-full bg-slate-100 dark:bg-slate-950 rounded-full overflow-hidden border border-slate-200 dark:border-slate-850">
+                              <div
+                                className={`h-full bg-gradient-to-r ${BAR_COLORS[idx % BAR_COLORS.length]} rounded-full transition-all duration-500 group-hover:brightness-110`}
+                                style={{ width: `${(item.count / maxCount) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           {/* Trend Charts */}

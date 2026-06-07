@@ -149,6 +149,8 @@ export interface P2TLGantiMeterResponse {
   };
   reasonsBreakdown: Array<{ reason: string; count: number }>;
   cumulativeReasonsBreakdown?: Array<{ reason: string; count: number }>;
+  cumulativeOldMeterBreakdown?: Array<{ reason: string; count: number }>;
+  cumulativePembMeterBreakdown?: Array<{ reason: string; count: number }>;
   totalCumulativeFiltered?: number;
   availableYears: string[];
   appliedMonth: string;

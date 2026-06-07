@@ -84,6 +84,23 @@ export class GasP2TLRepository implements IP2TLRepository {
           { month: 'Nov', kwh: 129000, cases: 12, ts: 129000 * 1100 },
           { month: 'Des', kwh: 127902, cases: 12, ts: 127902 * 1100 }
         ],
+        prevTotalCasesYear: 130,
+        prevTotalKwhYear: 1285000,
+        prevTotalTsYear: 1413500000,
+        prevMonthlyTrend: [
+          { month: 'Jan', kwh: 110000, cases: 10, ts: 110000 * 1100 },
+          { month: 'Feb', kwh: 112000, cases: 9, ts: 112000 * 1100 },
+          { month: 'Mar', kwh: 120000, cases: 12, ts: 120000 * 1100 },
+          { month: 'Apr', kwh: 118000, cases: 11, ts: 118000 * 1100 },
+          { month: 'Mei', kwh: 130000, cases: 15, ts: 130000 * 1100 },
+          { month: 'Jun', kwh: 125000, cases: 14, ts: 125000 * 1100 },
+          { month: 'Jul', kwh: 115000, cases: 10, ts: 115000 * 1100 },
+          { month: 'Agu', kwh: 118000, cases: 11, ts: 118000 * 1100 },
+          { month: 'Sep', kwh: 124000, cases: 13, ts: 124000 * 1100 },
+          { month: 'Okt', kwh: 108000, cases: 8, ts: 108000 * 1100 },
+          { month: 'Nov', kwh: 120000, cases: 11, ts: 120000 * 1100 },
+          { month: 'Des', kwh: 115000, cases: 10, ts: 115000 * 1100 }
+        ],
         tariffBreakdown: [
           { class: 'R', cases: 85, kwh: 685400, ts: 753940000 },
           { class: 'B', cases: 35, kwh: 452100, ts: 497310000 },
@@ -179,6 +196,10 @@ export class GasP2TLRepository implements IP2TLRepository {
             golonganBreakdown: result.execSummary && Array.isArray(result.execSummary.golonganBreakdown) ? result.execSummary.golonganBreakdown : [],
             dayaBreakdown: result.execSummary && Array.isArray(result.execSummary.dayaBreakdown) ? result.execSummary.dayaBreakdown : [],
             kwhBreakdown: result.execSummary && Array.isArray(result.execSummary.kwhBreakdown) ? result.execSummary.kwhBreakdown : [],
+            prevTotalCasesYear: result.execSummary ? Number(result.execSummary.prevTotalCasesYear) || 0 : 0,
+            prevTotalKwhYear: result.execSummary ? Number(result.execSummary.prevTotalKwhYear) || 0 : 0,
+            prevTotalTsYear: result.execSummary ? Number(result.execSummary.prevTotalTsYear) || 0 : 0,
+            prevMonthlyTrend: result.execSummary && Array.isArray(result.execSummary.prevMonthlyTrend) ? result.execSummary.prevMonthlyTrend : [],
             topFindings: result.execSummary && Array.isArray(result.execSummary.topFindings) ? result.execSummary.topFindings : [],
           },
           settings: result.settings || undefined

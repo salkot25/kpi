@@ -151,9 +151,9 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
   const [targetsStatus, setTargetsStatus] = useState<{ show: boolean; success: boolean; message: string } | null>(null);
   const [loadingTargets, setLoadingTargets] = useState<boolean>(false);
 
-  const [dailyTrend, setDailyTrend] = useState<Array<{ label: string; count: number; target: number }>>([]);
-  const [weeklyTrend, setWeeklyTrend] = useState<Array<{ label: string; count: number; target: number }>>([]);
-  const [monthlyTrend, setMonthlyTrend] = useState<Array<{ label: string; count: number; target: number }>>([]);
+  const [dailyTrend, setDailyTrend] = useState<Array<{ label: string; count: number; target: number; prepaidCount?: number; postpaidCount?: number }>>([]);
+  const [weeklyTrend, setWeeklyTrend] = useState<Array<{ label: string; count: number; target: number; prepaidCount?: number; postpaidCount?: number }>>([]);
+  const [monthlyTrend, setMonthlyTrend] = useState<Array<{ label: string; count: number; target: number; prepaidCount?: number; postpaidCount?: number }>>([]);
   const [granularity, setGranularity] = useState<'hari' | 'minggu' | 'bulan'>('bulan');
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -630,7 +630,11 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
               <div className="flex flex-wrap gap-x-4 gap-y-2 mb-4 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
                 <div className="flex items-center gap-1.5">
                   <span className="w-3 h-3 rounded bg-emerald-500" />
-                  <span>Realisasi Penggantian</span>
+                  <span>Realisasi Prabayar</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded bg-sky-500" />
+                  <span>Realisasi Paskabayar</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-4 h-0.5 border-t-2 border-dashed border-amber-500" />
@@ -686,7 +690,6 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
 
                         // Realization Bar
                         const realHeight = (m.count / maxChartVal) * 160;
-                        const realY = 180 - realHeight;
 
                         const barWidth = Math.max(4, Math.floor(step * 0.5));
                         const realX = center - barWidth / 2;
@@ -707,27 +710,61 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
                               strokeDasharray="3 1.5"
                             />
 
-                            {/* Current Realization Bar */}
-                            <rect
-                              x={realX}
-                              y={realY}
-                              width={barWidth}
-                              height={Math.max(realHeight, 2)}
-                              rx="1.5"
-                              className={`${hoveredPoint === idx ? 'fill-emerald-500' : 'fill-emerald-500/80 dark:fill-emerald-500/70'} transition-all duration-200 cursor-pointer`}
-                              onMouseEnter={(e) => {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                const containerRect = e.currentTarget.ownerSVGElement?.parentElement?.getBoundingClientRect();
-                                if (containerRect) {
-                                  setTooltipPos({
-                                    x: rect.left - containerRect.left,
-                                    y: rect.top - containerRect.top
-                                  });
-                                }
-                                setHoveredPoint(idx);
-                              }}
-                              onMouseLeave={() => setHoveredPoint(null)}
-                            />
+                            {/* Current Realization Stacked Bar */}
+                            {(() => {
+                              const prepaidCount = (m as any).prepaidCount !== undefined ? (m as any).prepaidCount : 0;
+                              const postpaidCount = (m as any).postpaidCount !== undefined ? (m as any).postpaidCount : m.count;
+                              const prepaidHeight = (prepaidCount / maxChartVal) * 160;
+                              const postpaidHeight = (postpaidCount / maxChartVal) * 160;
+                              const prepaidY = 180 - prepaidHeight;
+                              const postpaidY = 180 - prepaidHeight - postpaidHeight;
+
+                              return (
+                                <>
+                                  {prepaidCount > 0 && (
+                                    <rect
+                                      x={realX}
+                                      y={prepaidY}
+                                      width={barWidth}
+                                      height={prepaidHeight}
+                                      rx="1"
+                                      className={`${hoveredPoint === idx ? 'fill-emerald-400' : 'fill-emerald-500'} transition-all duration-200 pointer-events-none`}
+                                    />
+                                  )}
+                                  {postpaidCount > 0 && (
+                                    <rect
+                                      x={realX}
+                                      y={postpaidY}
+                                      width={barWidth}
+                                      height={postpaidHeight}
+                                      rx="1"
+                                      className={`${hoveredPoint === idx ? 'fill-sky-400' : 'fill-sky-500'} transition-all duration-200 pointer-events-none`}
+                                    />
+                                  )}
+                                  {/* Full height overlay for mouse trigger */}
+                                  <rect
+                                    x={realX}
+                                    y={180 - Math.max(realHeight, 2)}
+                                    width={barWidth}
+                                    height={Math.max(realHeight, 2)}
+                                    fill="transparent"
+                                    className="cursor-pointer"
+                                    onMouseEnter={(e) => {
+                                      const rect = e.currentTarget.getBoundingClientRect();
+                                      const containerRect = e.currentTarget.ownerSVGElement?.parentElement?.getBoundingClientRect();
+                                      if (containerRect) {
+                                        setTooltipPos({
+                                          x: rect.left - containerRect.left,
+                                          y: rect.top - containerRect.top
+                                        });
+                                      }
+                                      setHoveredPoint(idx);
+                                    }}
+                                    onMouseLeave={() => setHoveredPoint(null)}
+                                  />
+                                </>
+                              );
+                            })()}
 
                             {/* Label */}
                             {labelToDisplay && (
@@ -751,8 +788,8 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
               {/* Tooltip Overlay */}
               {hoveredPoint !== null && currentChartData[hoveredPoint] && (
                 <div 
-                  className="absolute bg-slate-900/95 dark:bg-slate-950/95 text-slate-55 border border-slate-700/50 backdrop-blur-md rounded-xl p-3 shadow-xl pointer-events-none text-[11px] font-semibold space-y-1.5 z-10 transition-all duration-150"
-                  style={{ left: tooltipPos.x + 10, top: tooltipPos.y - 100 }}
+                  className="absolute bg-slate-900/95 dark:bg-slate-950/95 text-slate-50 border border-slate-700/50 backdrop-blur-md rounded-xl p-3 shadow-xl pointer-events-none text-[11px] font-semibold space-y-1.5 z-10 transition-all duration-150"
+                  style={{ left: tooltipPos.x + 10, top: tooltipPos.y - 120 }}
                 >
                   <div className="font-extrabold text-emerald-400 border-b border-slate-800 pb-1 mb-1">
                     {granularity === 'hari' ? `Tanggal ${currentChartData[hoveredPoint].label} ${MONTH_NAMES_ID[activeMonthIndex]}` :
@@ -760,6 +797,10 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
                      `Bulan ${currentChartData[hoveredPoint].label}`}
                   </div>
                   <div>Realisasi: <span className="font-black text-slate-100">{currentChartData[hoveredPoint].count} Unit</span></div>
+                  <div className="pl-2 text-[10px] text-slate-400 flex flex-col gap-0.5">
+                    <div>Prabayar: <span className="font-bold text-slate-200">{currentChartData[hoveredPoint].prepaidCount !== undefined ? currentChartData[hoveredPoint].prepaidCount : 0} Unit</span></div>
+                    <div>Paskabayar: <span className="font-bold text-slate-200">{currentChartData[hoveredPoint].postpaidCount !== undefined ? currentChartData[hoveredPoint].postpaidCount : currentChartData[hoveredPoint].count} Unit</span></div>
+                  </div>
                   <div className="border-t border-slate-800/60 pt-1 mt-1">Target: <span className="font-black text-amber-400">{currentChartData[hoveredPoint].target} Unit</span></div>
                 </div>
               )}

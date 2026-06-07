@@ -138,6 +138,13 @@ function parseDateRegister(cellValue) {
     return new Date(cellValue.getTime());
   }
   
+  // Handle numeric date serial numbers from Google Sheets/Excel (e.g. 45000+ for year 2023+)
+  if (typeof cellValue === 'number' || (cellValue && !isNaN(Number(cellValue)) && Number(cellValue) > 30000 && Number(cellValue) < 60000)) {
+    var num = Number(cellValue);
+    // Excel/Google Sheets epoch is Dec 30, 1899. Jan 1, 1970 is day 25569.
+    return new Date((num - 25569) * 86400 * 1000);
+  }
+  
   var str = String(cellValue).trim();
   if (!str) return null;
   
@@ -380,7 +387,11 @@ function doGet(e) {
     var colMap = {};
     for (var i = 0; i < targetCols.length; i++) {
       var col = targetCols[i];
-      colMap[col] = findHeaderIndexInSheet(data, [col, col.replace(/_/g, " "), col.replace(/_/g, "")]);
+      var possibleNames = [col, col.replace(/_/g, " "), col.replace(/_/g, "")];
+      if (col === "KDPEMBMETER") {
+        possibleNames.push("PEMBATAS METER", "PEMBATAS_METER", "PEMBATAS", "KD PEMB METER", "KD_PEMB_METER", "JENIS METER", "JENIS_METER");
+      }
+      colMap[col] = findHeaderIndexInSheet(data, possibleNames);
     }
     
     // ── Current date reference for global stats ──
@@ -578,12 +589,20 @@ function doGet(e) {
     
     // Initialize daily trend map
     var dailyMap = {};
+    var dailyPrepaidMap = {};
+    var dailyPostpaidMap = {};
     for (var d = 1; d <= daysCount; d++) {
       dailyMap[d] = 0;
+      dailyPrepaidMap[d] = 0;
+      dailyPostpaidMap[d] = 0;
     }
     
     // Initialize weekly trend map
     var weeklyMap = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    var weeklyPrepaidMap = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    var weeklyPostpaidMap = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    
+    var idxPembMeter = colMap["KDPEMBMETER"];
     
     // Count matches in filteredRows
     for (var fi = 0; fi < filteredRows.length; fi++) {
@@ -597,11 +616,33 @@ function doGet(e) {
           if (dayNum >= 1 && dayNum <= daysCount) {
             dailyMap[dayNum]++;
             
-            if (dayNum <= 7) weeklyMap[1]++;
-            else if (dayNum <= 14) weeklyMap[2]++;
-            else if (dayNum <= 21) weeklyMap[3]++;
-            else if (dayNum <= 28) weeklyMap[4]++;
-            else weeklyMap[5]++;
+            // Check if Prabayar or Paskabayar
+            var isPrepaid = false;
+            if (idxPembMeter !== -1) {
+              var valPemb = String(item.row[idxPembMeter] || "").trim().toUpperCase();
+              if (valPemb.indexOf("PRABAYAR") !== -1 || valPemb.indexOf("PREPAID") !== -1 || valPemb === "P" || valPemb === "TOKEN") {
+                isPrepaid = true;
+              }
+            }
+            if (isPrepaid) {
+              dailyPrepaidMap[dayNum]++;
+            } else {
+              dailyPostpaidMap[dayNum]++;
+            }
+            
+            var w = 1;
+            if (dayNum <= 7) w = 1;
+            else if (dayNum <= 14) w = 2;
+            else if (dayNum <= 21) w = 3;
+            else if (dayNum <= 28) w = 4;
+            else w = 5;
+            
+            weeklyMap[w]++;
+            if (isPrepaid) {
+              weeklyPrepaidMap[w]++;
+            } else {
+              weeklyPostpaidMap[w]++;
+            }
           }
         }
       }
@@ -620,7 +661,9 @@ function doGet(e) {
       dailyTrend.push({
         label: String(d),
         count: dailyMap[d],
-        target: dayTarget
+        target: dayTarget,
+        prepaidCount: dailyPrepaidMap[d],
+        postpaidCount: dailyPostpaidMap[d]
       });
     }
     
@@ -647,20 +690,39 @@ function doGet(e) {
       weeklyTrend.push({
         label: "W" + w,
         count: weeklyMap[w],
-        target: weeklyTargets[w]
+        target: weeklyTargets[w],
+        prepaidCount: weeklyPrepaidMap[w],
+        postpaidCount: weeklyPostpaidMap[w]
       });
     }
     
     var monthlyMap = {};
+    var monthlyPrepaidMap = {};
+    var monthlyPostpaidMap = {};
     var monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
     for (var m = 0; m < 12; m++) {
       monthlyMap[m] = 0;
+      monthlyPrepaidMap[m] = 0;
+      monthlyPostpaidMap[m] = 0;
     }
     
     for (var fi = 0; fi < allRows.length; fi++) {
       var item = allRows[fi];
       if (item._ry === targetYearInt && item._rm !== null) {
         monthlyMap[item._rm]++;
+        
+        var isPrepaid = false;
+        if (idxPembMeter !== -1) {
+          var valPemb = String(item.row[idxPembMeter] || "").trim().toUpperCase();
+          if (valPemb.indexOf("PRABAYAR") !== -1 || valPemb.indexOf("PREPAID") !== -1 || valPemb === "P" || valPemb === "TOKEN") {
+            isPrepaid = true;
+          }
+        }
+        if (isPrepaid) {
+          monthlyPrepaidMap[item._rm]++;
+        } else {
+          monthlyPostpaidMap[item._rm]++;
+        }
       }
     }
     
@@ -668,7 +730,9 @@ function doGet(e) {
       monthlyTrend.push({
         label: monthNames[m],
         count: monthlyMap[m],
-        target: gantiMeterTargetsMap[m + 1]
+        target: gantiMeterTargetsMap[m + 1],
+        prepaidCount: monthlyPrepaidMap[m],
+        postpaidCount: monthlyPostpaidMap[m]
       });
     }
 
@@ -1276,7 +1340,11 @@ function doGet(e) {
     golonganBreakdown: [],
     dayaBreakdown: [],
     kwhBreakdown: [],
-    topFindings: []
+    topFindings: [],
+    prevTotalCasesYear: 0,
+    prevTotalKwhYear: 0,
+    prevTotalTsYear: 0,
+    prevMonthlyTrend: []
   };
 
   if (realisasiSheet) {
@@ -1298,6 +1366,13 @@ function doGet(e) {
       var monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
       for (var m = 0; m < 12; m++) {
         monthlySlots[m] = { month: monthNames[m], cases: 0, kwh: 0, ts: 0 };
+      }
+
+      // Initialize previous year monthly aggregation slots
+      var prevYear = paramYear - 1;
+      var prevMonthlySlots = {};
+      for (var pm = 0; pm < 12; pm++) {
+        prevMonthlySlots[pm] = { month: monthNames[pm], cases: 0, kwh: 0, ts: 0 };
       }
       
       var tariffGroups = {};
@@ -1333,6 +1408,19 @@ function doGet(e) {
         var kwhVal = idxKwh !== -1 ? parseNumericValue(rowVal[idxKwh]) : 0;
         var tsVal = idxTs !== -1 ? parseNumericValue(rowVal[idxTs]) : 0;
         
+        // Match previous year for YoY comparison
+        if (rowYear === prevYear) {
+          execSummary.prevTotalCasesYear++;
+          execSummary.prevTotalKwhYear += kwhVal;
+          execSummary.prevTotalTsYear += tsVal;
+          
+          if (prevMonthlySlots[rowMonth]) {
+            prevMonthlySlots[rowMonth].cases++;
+            prevMonthlySlots[rowMonth].kwh += kwhVal;
+            prevMonthlySlots[rowMonth].ts += tsVal;
+          }
+        }
+
         // Match chosen year
         if (rowYear === paramYear) {
           execSummary.totalCasesYear++;
@@ -1452,6 +1540,7 @@ function doGet(e) {
       }
       
       execSummary.monthlyTrend = Object.keys(monthlySlots).map(function(k) { return monthlySlots[k]; });
+      execSummary.prevMonthlyTrend = Object.keys(prevMonthlySlots).map(function(k) { return prevMonthlySlots[k]; });
       execSummary.tariffBreakdown = Object.keys(tariffGroups).map(function(k) { return tariffGroups[k]; });
       
       execSummary.golonganBreakdown = Object.keys(golonganGroups).map(function(k) { return golonganGroups[k]; });

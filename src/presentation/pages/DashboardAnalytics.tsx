@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp,  
-  Users, 
   Calendar, 
-  Database,
-  Search,
-  ChevronLeft,
   ChevronRight,
-  Zap,
-  DollarSign,
-  Briefcase,
-  Layers
+  Layers,
+  ArrowUpRight,
+  ArrowDownRight,
+  Target,
+  AlertTriangle,
+  Trophy,
+  TrendingDown,
+  BarChart3
 } from 'lucide-react';
 import { colors, borderRadius, shadows } from '../../design-system/tokens';
 import type { P2TLTarget, P2TLRealization, P2TLResponse } from '../../core/entities/report.entity';
@@ -147,13 +147,6 @@ export const DashboardAnalytics: React.FC<DashboardAnalyticsProps> = ({
 }) => {
   const [subTab, setSubTab] = useState<'kpi' | 'targets' | 'summary'>('kpi');
   const [logs, setLogs] = useState<any[]>([]);
-  const [logRows, setLogRows] = useState<any[]>([]);
-  const [loadingLogs, setLoadingLogs] = useState<boolean>(false);
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('');
-  const [logsPage, setLogsPage] = useState<number>(1);
-  const [logsLimit, setLogsLimit] = useState<number>(10);
-  const [logsPagination, setLogsPagination] = useState({ page: 1, limit: 10, totalFiltered: 0, totalPages: 1 });
 
   // SVG Chart hover and tooltip states
   const [hoveredMonth, setHoveredMonth] = useState<number | null>(null);
@@ -163,13 +156,6 @@ export const DashboardAnalytics: React.FC<DashboardAnalyticsProps> = ({
   // Chart granularity (hari | minggu | bulan)
   const [granularity, setGranularity] = useState<'hari' | 'minggu' | 'bulan'>('bulan');
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-      setLogsPage(1);
-    }, 300);
-    return () => clearTimeout(handler);
-  }, [searchTerm]);
 
   // Fetch logs for chart calculations
   useEffect(() => {
@@ -189,28 +175,6 @@ export const DashboardAnalytics: React.FC<DashboardAnalyticsProps> = ({
     fetchChartLogs();
   }, []);
 
-  // Fetch logs for table with server-side pagination and search
-  useEffect(() => {
-    const fetchTableLogs = async () => {
-      setLoadingLogs(true);
-      try {
-        const response = await p2tlRepository.getLogsPaginated({
-          page: logsPage,
-          limit: logsLimit,
-          search: debouncedSearchTerm || undefined,
-          sort: 'date_desc',
-        });
-        setLogRows(response.data || []);
-        setLogsPagination(response.pagination || { page: logsPage, limit: logsLimit, totalFiltered: 0, totalPages: 1 });
-      } catch (e) {
-        console.error("Failed to load paginated logs in dashboard:", e);
-        setLogRows([]);
-      } finally {
-        setLoadingLogs(false);
-      }
-    };
-    fetchTableLogs();
-  }, [logsPage, logsLimit, debouncedSearchTerm]);
 
   const activeWorkingDays = workingDays || (localStorage.getItem('p2tl_working_days') as '5' | '6' | '7') || '7';
   
@@ -373,16 +337,7 @@ export const DashboardAnalytics: React.FC<DashboardAnalyticsProps> = ({
     
   const semesterPercent = targetSemester > 0 ? (realSemester / targetSemester) * 100 : 0;
 
-  // Breakdown categories
-  const categories = [
-    { name: 'LKBK Macet / Numpuk', target: targets.targetLkbkPlg, real: realization.realisasiLkbkPlg === '' ? 0 : Number(realization.realisasiLkbkPlg) },
-    { name: 'Periksa Plg 3 Phasa', target: targets.target3PhasaPlg, real: realization.realisasi3PhasaPlg === '' ? 0 : Number(realization.realisasi3PhasaPlg) },
-    { name: 'Periksa TO DLPD', target: targets.targetDlpdPlg, real: realization.realisasiDlpdPlg === '' ? 0 : Number(realization.realisasiDlpdPlg) },
-    { name: 'Pengembangan TO', target: targets.targetPengembanganPlg, real: realization.realisasiPengembanganPlg === '' ? 0 : Number(realization.realisasiPengembanganPlg) },
-    { name: 'Penagihan TS kWh Periodik', target: targets.targetTsPeriodikPlg, real: realization.realisasiTsPeriodikPlg === '' ? 0 : Number(realization.realisasiTsPeriodikPlg) },
-    { name: 'Penagihan TS Macet (Kuning)', target: targets.targetTsMacetPlg, real: realization.realisasiTsMacetPlg === '' ? 0 : Number(realization.realisasiTsMacetPlg) },
-    { name: 'Lainnya', target: targets.targetLainnyaPlg, real: realization.realisasiLainnyaPlg === '' ? 0 : Number(realization.realisasiLainnyaPlg) },
-  ];
+
 
   const currentYear = getYearString(targets.date);
   const targetBulanKwh = targetMonth;
@@ -462,7 +417,7 @@ export const DashboardAnalytics: React.FC<DashboardAnalyticsProps> = ({
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              KPI & Breakdown
+              Realisasi
             </button>
             <button
               onClick={() => setSubTab('targets')}
@@ -472,7 +427,7 @@ export const DashboardAnalytics: React.FC<DashboardAnalyticsProps> = ({
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              Target Bulanan
+              Target
             </button>
             <button
               onClick={() => setSubTab('summary')}
@@ -482,7 +437,7 @@ export const DashboardAnalytics: React.FC<DashboardAnalyticsProps> = ({
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              Executive Summary ({currentYear})
+              Ringkasan ({currentYear})
             </button>
           </div>
 
@@ -957,243 +912,630 @@ export const DashboardAnalytics: React.FC<DashboardAnalyticsProps> = ({
       ) : subTab === 'targets' ? (
         /* TAB 2: TARGET BULANAN PANEL */
         <MonthlyTargets workingDays={activeWorkingDays} />
-      ) : (
-        /* TAB 3: EXECUTIVE SUMMARY PANEL */
+      ) : (() => {
+        /* TAB 3: RINGKASAN (REVAMPED) */
+        const prevYear = year - 1;
+        const prevMonthlyTrend = execSummary.prevMonthlyTrend ?? [];
+
+        
+
+        // Diagnostic calculations
+        const totalTargetYear = monthlyTargets.reduce((s, v) => s + v, 0);
+        const totalRealYear = execSummary.totalKwhYear;
+        const sisaTarget = Math.max(0, totalTargetYear - totalRealYear);
+        const sisaBulan = Math.max(1, 12 - month);
+        const rataRataDibutuhkan = Math.round(sisaTarget / sisaBulan);
+
+        const prevTotalKwhYtd = prevMonthlyTrend.slice(0, month).reduce((sum, m) => sum + (m?.kwh ?? 0), 0);
+        const diffKwhYtd = totalRealYear - prevTotalKwhYtd;
+        const pctGrowthYtd = prevTotalKwhYtd > 0 ? (diffKwhYtd / prevTotalKwhYtd) * 100 : (totalRealYear > 0 ? 100 : 0);
+
+        // Scenario Projections variables
+        const currentMonthNum = month;
+        const remainingMonths = Math.max(0, 12 - currentMonthNum);
+        const avgRealKwh = currentMonthNum > 0 ? totalRealYear / currentMonthNum : 0;
+
+        // Calculate sisa hari kerja dari sisa bulan untuk Skenario 2
+        let remainingWorkingDays = 0;
+        for (let m = currentMonthNum; m < 12; m++) {
+          remainingWorkingDays += getWorkingDaysCount(year, m, activeWorkingDays);
+        }
+        remainingWorkingDays = Math.max(1, remainingWorkingDays);
+
+        // Scenario 1: Apabila Progres Seperti Saat Ini (Current Pace)
+        const projectedKwhCurrent = Math.round(totalRealYear + (avgRealKwh * remainingMonths));
+        const pctCurrent = totalTargetYear > 0 ? (projectedKwhCurrent / totalTargetYear) * 100 : 0;
+        const gapCurrent = totalTargetYear - projectedKwhCurrent;
+        
+        // Performa bulanan yang dibutuhkan agar target tahunan tercapai
+        const avgRequiredKwhCurrent = remainingMonths > 0 ? Math.round(sisaTarget / remainingMonths) : 0;
+        const pctIncreaseRequiredCurrent = (avgRealKwh > 0 && sisaTarget > 0) ? Math.round(((avgRequiredKwhCurrent / avgRealKwh) - 1) * 100) : 0;
+
+        // Scenario 2: Jika Target Harian Kumulatif Tercapai
+        // Agar target kumulatif tercapai, kita harus menutup sisaTarget dengan sisa hari kerja.
+        const newTargetHarian = remainingWorkingDays > 0 ? Math.round(sisaTarget / remainingWorkingDays) : 0;
+        const baselineTargetHarian = Math.round(targetMonth / Math.max(1, workingDaysInMonth));
+        const pctDailyIncrease = (baselineTargetHarian > 0 && sisaTarget > 0) ? Math.round(((newTargetHarian / baselineTargetHarian) - 1) * 100) : 0;
+
+        // Scenario 3: Cara Mencapai Target 110%
+        const target110Year = totalTargetYear * 1.10;
+        const sisaTarget110 = Math.max(0, target110Year - totalRealYear);
+        const avgRequiredKwh110 = remainingMonths > 0 ? Math.round(sisaTarget110 / remainingMonths) : 0;
+        const pctEffortRequired110 = (avgRealKwh > 0 && sisaTarget110 > 0) ? Math.round(((avgRequiredKwh110 / avgRealKwh) - 1) * 100) : 0;
+
+        // Best / worst months
+        const monthlyTrendData = execSummary.monthlyTrend || [];
+        const monthsWithData = monthlyTrendData.filter(m => m.kwh > 0);
+        const bestMonth = monthsWithData.length > 0 ? monthsWithData.reduce((best, m) => m.kwh > best.kwh ? m : best, monthsWithData[0]) : null;
+        const worstMonth = monthsWithData.length > 0 ? monthsWithData.reduce((worst, m) => m.kwh < worst.kwh ? m : worst, monthsWithData[0]) : null;
+
+        // YoY chart data
+        const yoyChartData = monthlyTrendData.map((m, idx) => ({
+          label: m.month,
+          current: m.kwh,
+          prev: prevMonthlyTrend[idx]?.kwh ?? 0,
+          target: monthlyTargets[idx] ?? 0,
+        }));
+        const yoyMaxVal = Math.max(...yoyChartData.map(d => Math.max(d.current, d.prev, d.target)), 1);
+
+
+
+        const targetKumulatifYtd = monthlyTargets.slice(0, month).reduce((sum, val) => sum + val, 0);
+        const pctYtd = targetKumulatifYtd > 0 ? (totalRealYear / targetKumulatifYtd) * 100 : 0;
+        const pctAnnual = totalTargetYear > 0 ? (totalRealYear / totalTargetYear) * 100 : 0;
+
+        const getKpiStatus = (pYtd: number, currentMonth: number, real: number, targetYtd: number) => {
+          const diff = real - targetYtd;
+          const diffStr = diff >= 0 ? `surplus +${formatIndoNumber(diff)} kWh` : `defisit ${formatIndoNumber(Math.abs(diff))} kWh`;
+          const monthsList = [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+          ];
+          const monthName = monthsList[currentMonth - 1] || '';
+          
+          if (pYtd >= 100) {
+            return {
+              label: 'SANGAT BAIK',
+              color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20',
+              iconColor: 'text-emerald-500',
+              description: `Kinerja luar biasa! Hingga bulan ${monthName}, realisasi kumulatif tahunan mencapai ${formatIndoNumber(real)} kWh. Angka ini mencatatkan ${diffStr} di atas target YTD (${formatIndoNumber(targetYtd)} kWh). Pertahankan intensitas pengawasan dan kualitas operasi untuk mengamankan surplus ini hingga akhir tahun.`
+            };
+          } else if (pYtd >= 90) {
+            return {
+              label: 'BAIK (ON TRACK)',
+              color: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20',
+              iconColor: 'text-teal-500',
+              description: `Kinerja aman dan terkendali. Realisasi kumulatif tahunan hingga ${monthName} sebesar ${formatIndoNumber(real)} kWh sudah berjalan sesuai rencana (on-track) dengan pencapaian ${Math.round(pYtd)}% dari target YTD. Lakukan akselerasi minor pada bulan berikutnya agar target tahunan tercapai lebih cepat.`
+            };
+          } else if (pYtd >= 75) {
+            return {
+              label: 'CUKUP (PERLU PERHATIAN)',
+              color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20',
+              iconColor: 'text-amber-500',
+              description: `Kinerja berada dalam zona kuning. Hingga bulan ${monthName}, pencapaian kumulatif berada di bawah target YTD dengan ${diffStr} (${Math.round(pYtd)}% dari target YTD). Tim lapangan disarankan meningkatkan intensitas patroli P2TL dan menyasar golongan tarif potensial untuk mengejar ketertinggalan.`
+            };
+          } else {
+            return {
+              label: 'KURANG (KRITIS)',
+              color: 'bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/20',
+              iconColor: 'text-rose-500',
+              description: `Status waspada/kritis! Target kWh kumulatif tahunan mengalami ${diffStr} yang signifikan dibandingkan target YTD. Segera susun langkah perbaikan (recovery plan), optimalkan data DLPD, dan lakukan evaluasi menyeluruh terhadap fokus operasi P2TL guna mendongkrak pencapaian kwh.`
+            };
+          }
+        };
+
+        const statusInfo = getKpiStatus(pctYtd, month, totalRealYear, targetKumulatifYtd);
+
+        return (
         <div className="space-y-6">
           
-          {/* Top Level Summary Stats for the Year */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            
-            {/* Total Cases inspected */}
-            <div className={`p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none ${borderRadius.xxl} flex items-center justify-between`}>
-              <div>
-                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Total Temuan Tahun {currentYear}</span>
-                <div className="text-2xl font-black text-slate-900 dark:text-slate-50 mt-1">{formatIndoNumber(execSummary.totalCasesYear)} Kasus</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1">Mencakup pemeriksaan PLN</div>
-              </div>
-              <div className="p-4 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl border border-emerald-500/10 dark:border-emerald-500/20">
-                <Briefcase className="w-6 h-6" />
-              </div>
-            </div>
+          {/* HERO HEADER: Kondisi Pencapaian kWh Kumulatif Tahunan */}
+          <div className={`p-6 ${borderRadius.xxl} border ${colors.border} ${shadows.md} bg-gradient-to-br from-emerald-50/50 via-white to-slate-50/50 dark:from-emerald-950/20 dark:via-slate-900 dark:to-slate-950 flex flex-col lg:flex-row justify-between items-stretch gap-6 relative overflow-hidden`}>
+            {/* Abstract background glow effects */}
+            <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 -mb-16 -ml-16 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
-            {/* Total kWh saved */}
-            <div className={`p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none ${borderRadius.xxl} flex items-center justify-between`}>
-              <div>
-                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Energi Diselamatkan</span>
-                <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{formatIndoNumber(execSummary.totalKwhYear)} kWh</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1">Estimasi kWh terselamatkan</div>
+            {/* Left: Status & Details */}
+            <div className="flex-1 space-y-4 z-10 flex flex-col justify-between">
+              <div className="space-y-2.5">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Status Pencapaian Kumulatif</span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide ${statusInfo.color}`}>
+                    {statusInfo.label}
+                  </span>
+                </div>
+                
+                <h2 className="text-xl font-black text-slate-900 dark:text-slate-50 tracking-tight leading-tight">
+                  Analisis Pencapaian kWh Kumulatif Tahun {year}
+                </h2>
+                
+                <p className="text-xs text-slate-600 dark:text-slate-350 font-semibold leading-relaxed max-w-3xl">
+                  {statusInfo.description}
+                </p>
               </div>
-              <div className="p-4 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl border border-emerald-500/10 dark:border-emerald-500/20">
-                <Zap className="w-6 h-6" />
-              </div>
-            </div>
 
-            {/* Total TS recovered */}
-            <div className={`p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none ${borderRadius.xxl} flex items-center justify-between`}>
-              <div>
-                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Tagihan Susulan (TS)</span>
-                <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">Rp {formatIndoNumber(execSummary.totalTsYear)}</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1">Pendapatan berhasil diamankan</div>
-              </div>
-              <div className="p-4 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl border border-emerald-500/10 dark:border-emerald-500/20">
-                <DollarSign className="w-6 h-6" />
-              </div>
-            </div>
-
-          </div>
-
-          {/* Breakdown & Logs */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            {/* Breakdown bars */}
-            <div className={`lg:col-span-5 p-6 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md} flex flex-col`}>
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-4 pb-2 border-b border-slate-200 dark:border-slate-880 flex items-center gap-2">
-                <Users className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
-                <span>Sasaran Operasi per Kategori</span>
-              </h3>
-
-              <div className="space-y-4 flex-grow flex flex-col justify-center">
-                {categories.map((cat, idx) => {
-                  const percent = cat.target > 0 ? (cat.real / cat.target) * 100 : 0;
-                  return (
-                    <div key={idx} className="space-y-1 text-xs">
-                      <div className="flex justify-between font-semibold text-slate-750 dark:text-slate-300">
-                        <span className="truncate pr-2">{idx + 1}. {cat.name}</span>
-                        <span className="flex-shrink-0 text-slate-500 dark:text-slate-400">{cat.real} / {cat.target} Plg</span>
-                      </div>
-                      
-                      <div className="h-2 w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-all duration-500`}
-                          style={{ width: `${Math.min(100, percent)}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+              {/* Metric mini indicators */}
+              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-200/60 dark:border-slate-800/60">
+                <div className="space-y-1">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Realisasi YTD</div>
+                  <div className="text-sm font-black text-slate-900 dark:text-slate-50">{formatIndoNumber(totalRealYear)} <span className="text-[10px] text-slate-500 font-semibold">kWh</span></div>
+                </div>
+                <div className="space-y-1 border-l border-slate-200 dark:border-slate-800 pl-4">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Target YTD</div>
+                  <div className="text-sm font-black text-slate-900 dark:text-slate-50">{formatIndoNumber(targetKumulatifYtd)} <span className="text-[10px] text-slate-500 font-semibold">kWh</span></div>
+                </div>
+                <div className="space-y-1 border-l border-slate-200 dark:border-slate-800 pl-4">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Target Tahunan</div>
+                  <div className="text-sm font-black text-slate-900 dark:text-slate-50">{formatIndoNumber(totalTargetYear)} <span className="text-[10px] text-slate-500 font-semibold">kWh</span></div>
+                </div>
               </div>
             </div>
 
-            {/* Logs timeline */}
-            <div className={`lg:col-span-7 p-6 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md} flex flex-col`}>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 pb-2 border-b border-slate-200 dark:border-slate-880">
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                  <Database className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
-                  <span>Log Realisasi Laporan</span>
-                </h3>
-
-                <div className="relative w-full sm:w-48 flex items-center">
-                  <input
-                    type="text"
-                    placeholder="Cari tanggal..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className={`w-full pl-8 pr-3 py-1.5 text-xs bg-slate-100/60 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg outline-none text-slate-700 dark:text-slate-300 focus:border-emerald-500 transition-custom`}
-                  />
-                  <Search className="w-3.5 h-3.5 text-slate-400 dark:text-slate-505 absolute left-2.5 pointer-events-none" />
+            {/* Right: Visual Ring / Bar Progress */}
+            <div className="w-full lg:w-72 flex flex-row lg:flex-col items-center justify-center lg:justify-between p-4 lg:p-6 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl z-10 shrink-0 gap-6">
+              {/* YTD Progress radial meter */}
+              <div className="flex flex-col items-center justify-center text-center">
+                <div className="relative flex items-center justify-center w-28 h-28">
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle
+                      cx="56"
+                      cy="56"
+                      r="48"
+                      className="stroke-slate-200 dark:stroke-slate-800"
+                      strokeWidth="8"
+                      fill="transparent"
+                    />
+                    <circle
+                      cx="56"
+                      cy="56"
+                      r="48"
+                      className={`transition-all duration-1000 ease-out ${
+                        pctYtd >= 100 ? 'stroke-emerald-500' : pctYtd >= 90 ? 'stroke-teal-500' : pctYtd >= 75 ? 'stroke-amber-500' : 'stroke-rose-500'
+                      }`}
+                      strokeWidth="8"
+                      fill="transparent"
+                      strokeDasharray={2 * Math.PI * 48}
+                      strokeDashoffset={2 * Math.PI * 48 * (1 - Math.min(100, pctYtd) / 100)}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute flex flex-col items-center justify-center">
+                    <span className="text-lg font-black text-slate-900 dark:text-slate-50">{Math.round(pctYtd)}%</span>
+                    <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">dari Target YTD</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex-grow overflow-x-auto min-h-[300px] max-h-[320px] pr-2">
-                {loadingLogs ? (
-                  <div className="h-full flex items-center justify-center flex-col gap-2 py-12">
-                    <svg className="animate-spin h-6 w-6 text-emerald-400" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    <span className="text-xs text-slate-400 font-semibold">Memuat log database...</span>
-                  </div>
-                ) : logRows.length === 0 ? (
-                  <div className="h-full flex items-center justify-center py-12 text-xs text-slate-500 font-semibold">
-                    Tidak ada log laporan yang ditemukan.
-                  </div>
-                ) : (
-                  <>
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="border-b border-slate-200 dark:border-slate-850 text-slate-500 dark:text-slate-400 font-bold">
-                          <th className="pb-3 pr-2">Tanggal Laporan</th>
-                          <th className="pb-3 pr-2">Harian (kWh)</th>
-                          <th className="pb-3 pr-2">Kumulatif (kWh)</th>
-                          <th className="pb-3">Sasaran</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {logRows.map((log, idx) => {
-                          const dateStr = log.Date || log.date || '';
-                          const harian = log.Realisasi_Harian_kWh || log.realisasiHarianKwh || 0;
-                          const kumulatif = log.Realisasi_Kumulatif_kWh || log.realisasiKumulatifKwh || 0;
-                          
-                          const sasaranTotal = 
-                            (Number(log.Realisasi_LKBK_Plg || log.realisasiLkbkPlg) || 0) +
-                            (Number(log.Realisasi_3Phasa_Plg || log.realisasi3PhasaPlg) || 0) +
-                            (Number(log.Realisasi_DLPD_Plg || log.realisasiDlpdPlg) || 0) +
-                            (Number(log.Realisasi_Pengembangan_Plg || log.realisasiPengembanganPlg) || 0) +
-                            (Number(log.Realisasi_TS_Periodik_Plg || log.realisasiTsPeriodikPlg) || 0) +
-                            (Number(log.Realisasi_TS_Macet_Plg || log.realisasiTsMacetPlg) || 0) +
-                            (Number(log.Realisasi_Lainnya_Plg || log.realisasiLainnyaPlg) || 0);
-
-                          return (
-                            <tr key={`${dateStr}-${idx}`} className="border-b border-slate-200 dark:border-slate-850/60 hover:bg-slate-100 dark:hover:bg-slate-900/40 text-slate-700 dark:text-slate-300">
-                              <td className="py-3 pr-2 font-semibold">{getIndonesianDateString(dateStr)}</td>
-                              <td className="py-3 pr-2">{formatIndoNumber(harian)}</td>
-                              <td className="py-3 pr-2">{formatIndoNumber(kumulatif)}</td>
-                              <td className="py-3 font-semibold text-emerald-600 dark:text-emerald-400">{sasaranTotal} Plg</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-
-                    <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-850 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
-                          Halaman {logsPagination.page} dari {Math.max(1, logsPagination.totalPages)} ({logsPagination.totalFiltered} data)
-                        </span>
-                        <select
-                          value={logsLimit}
-                          onChange={(e) => {
-                            setLogsLimit(Number(e.target.value));
-                            setLogsPage(1);
-                          }}
-                          className="px-2 py-1 text-[10px] font-bold bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg outline-none text-slate-700 dark:text-slate-300"
-                        >
-                          <option value={5}>5/baris</option>
-                          <option value={10}>10/baris</option>
-                          <option value={20}>20/baris</option>
-                          <option value={50}>50/baris</option>
-                        </select>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => setLogsPage((p) => Math.max(1, p - 1))}
-                          disabled={logsPagination.page <= 1}
-                          className="p-1.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 disabled:opacity-40 disabled:pointer-events-none transition-custom"
-                        >
-                          <ChevronLeft className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setLogsPage((p) => Math.min(logsPagination.totalPages || 1, p + 1))}
-                          disabled={logsPagination.page >= (logsPagination.totalPages || 1)}
-                          className="p-1.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 disabled:opacity-40 disabled:pointer-events-none transition-custom"
-                        >
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
+              {/* Annual Progress bar */}
+              <div className="flex-1 lg:w-full space-y-2">
+                <div className="flex justify-between items-center text-[10px] font-bold text-slate-450 uppercase tracking-wide">
+                  <span>Progres Target Tahunan</span>
+                  <span className="text-slate-700 dark:text-slate-300">{Math.round(pctAnnual)}%</span>
+                </div>
+                <div className="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-300/20 dark:border-slate-700/20">
+                  <div
+                    className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                      pctAnnual >= 100 ? 'bg-emerald-500' : pctAnnual >= 50 ? 'bg-emerald-500/80' : 'bg-emerald-500/50'
+                    }`}
+                    style={{ width: `${Math.min(100, pctAnnual)}%` }}
+                  />
+                </div>
               </div>
+            </div>
+          </div>
+          
+          
+
+          {/* SECTION 2: YoY Monthly Comparison Chart & Data Table */}
+          <div className={`p-6 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md}`}>
+            
+            {/* Header section with cumulative YTD comparison */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800/80">
+              <div className="space-y-1">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-705 dark:text-slate-200 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                  <span>Perbandingan Bulanan kWh — {currentYear} vs {prevYear}</span>
+                </h3>
+                <div className="text-[11px] text-slate-505 dark:text-slate-400 font-semibold">
+                  Kumulatif YTD: <span className="font-bold text-slate-700 dark:text-slate-200">{formatIndoNumber(totalRealYear)} kWh</span> vs <span className="font-bold text-slate-700 dark:text-slate-202">{formatIndoNumber(prevTotalKwhYtd)} kWh ({prevYear})</span>
+                  <span className={`ml-2 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-black ${diffKwhYtd >= 0 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-505 dark:text-rose-400'}`}>
+                    {diffKwhYtd >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                    {diffKwhYtd >= 0 ? '+' : ''}{Math.round(pctGrowthYtd)}% YoY
+                  </span>
+                </div>
+              </div>
+
+              {/* Legends */}
+              <div className="flex items-center gap-4 text-[10px] font-bold shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-2.5 rounded-sm bg-emerald-500" />
+                  <span className="text-slate-500 dark:text-slate-400">{currentYear}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-2.5 rounded-sm bg-slate-300 dark:bg-slate-600" />
+                  <span className="text-slate-500 dark:text-slate-400">{prevYear}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-0.5 bg-amber-500" />
+                  <span className="text-slate-500 dark:text-slate-400">Target</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+              
+              {/* Left Column: SVG Chart */}
+              <div className="lg:col-span-8 relative" style={{ height: 220 }}>
+                <svg width="100%" height="220" viewBox="0 0 720 220" preserveAspectRatio="none" className="overflow-visible">
+                  {yoyChartData.map((d, idx) => {
+                    const groupWidth = 720 / 12;
+                    const barW = 14;
+                    const gap = 2;
+                    const centerX = groupWidth * idx + groupWidth / 2;
+                    const prevBarX = centerX - barW - gap / 2;
+                    const currBarX = centerX + gap / 2;
+                    const maxH = 175;
+                    const prevH = yoyMaxVal > 0 ? (d.prev / yoyMaxVal) * maxH : 0;
+                    const currH = yoyMaxVal > 0 ? (d.current / yoyMaxVal) * maxH : 0;
+                    const targetY = yoyMaxVal > 0 ? 185 - (d.target / yoyMaxVal) * maxH : 185;
+
+                    return (
+                      <g key={idx}>
+                        {/* Previous year bar */}
+                        <rect
+                          x={prevBarX}
+                          y={185 - prevH}
+                          width={barW}
+                          height={Math.max(prevH, 1)}
+                          rx="1.5"
+                          className="fill-slate-300 dark:fill-slate-600/80 transition-all duration-350"
+                        />
+                        {/* Current year bar */}
+                        <rect
+                          x={currBarX}
+                          y={185 - currH}
+                          width={barW}
+                          height={Math.max(currH, 1)}
+                          rx="1.5"
+                          className="fill-emerald-500 dark:fill-emerald-500/80 transition-all duration-350"
+                        />
+                        {/* Target marker line */}
+                        <line
+                          x1={prevBarX - 2}
+                          y1={targetY}
+                          x2={currBarX + barW + 2}
+                          y2={targetY}
+                          className="stroke-amber-500"
+                          strokeWidth="1.5"
+                          strokeDasharray="3,2"
+                        />
+                        {/* Month label */}
+                        <text
+                          x={centerX}
+                          y="202"
+                          textAnchor="middle"
+                          className="text-[9px] font-extrabold fill-slate-400 dark:fill-slate-500"
+                        >
+                          {d.label}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+
+              {/* Right Column: Month-by-month Data Summary */}
+              <div className="lg:col-span-4 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-slate-800 lg:pl-6 pt-4 lg:pt-0">
+                <div className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2">Rincian Perbandingan Bulanan</div>
+                <div className="overflow-y-auto max-h-[180px] pr-1 space-y-2 text-xs">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="text-[9px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                        <th className="pb-1.5">Bulan</th>
+                        <th className="pb-1.5 text-right">{prevYear}</th>
+                        <th className="pb-1.5 text-right">{currentYear}</th>
+                        <th className="pb-1.5 text-right">YoY (%)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100/60 dark:divide-slate-800/40">
+                      {yoyChartData.map((d, idx) => {
+                        const mDiff = d.current - d.prev;
+                        const mPct = d.prev > 0 ? (mDiff / d.prev) * 100 : (d.current > 0 ? 100 : 0);
+                        const isCurrentActive = idx < month; // only show data up to current selected month or actual months
+                        
+                        return (
+                          <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30">
+                            <td className="py-1.5 font-bold text-slate-600 dark:text-slate-300">{d.label}</td>
+                            <td className="py-1.5 text-right text-slate-500 dark:text-slate-400 font-semibold">{formatIndoNumber(d.prev)}</td>
+                            <td className="py-1.5 text-right text-slate-800 dark:text-slate-100 font-bold">{isCurrentActive ? formatIndoNumber(d.current) : '-'}</td>
+                            <td className="py-1.5 text-right font-black">
+                              {isCurrentActive ? (
+                                <span className={`inline-flex items-center gap-0.5 text-[10px] ${mDiff >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                  {mDiff >= 0 ? '+' : ''}{Math.round(mPct)}%
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 font-medium">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
             </div>
 
           </div>
 
-          {/* Top 5 Highest findings Table */}
-          <div className={`p-6 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md}`}>
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-4 pb-2 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
-              <Zap className="w-4 h-4 text-rose-500 animate-pulse" />
-              <span className="text-rose-500">Top 5 Kasus Temuan Terbesar (Berdasarkan Tagihan Susulan)</span>
-            </h3>
+          {/* SECTION 3: Diagnostic Alert Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            {/* Sisa Target */}
+            <div className={`p-5 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md} space-y-2`}>
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg border border-amber-500/15">
+                  <Target className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sisa Target Tahun</span>
+              </div>
+              <div className="text-xl font-black text-slate-900 dark:text-slate-50">{formatIndoNumber(sisaTarget)} <span className="text-xs font-bold text-slate-400">kWh</span></div>
+              <div className="h-2 w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${totalRealYear >= totalTargetYear ? 'bg-emerald-500' : totalRealYear >= totalTargetYear * 0.6 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                  style={{ width: `${Math.min(100, totalTargetYear > 0 ? (totalRealYear / totalTargetYear) * 100 : 0)}%` }}
+                />
+              </div>
+              <div className="text-[10px] text-slate-400 font-semibold">
+                Tercapai: {formatIndoNumber(totalRealYear)} / {formatIndoNumber(totalTargetYear)} kWh ({totalTargetYear > 0 ? Math.round((totalRealYear / totalTargetYear) * 100) : 0}%)
+              </div>
+            </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-black">
-                    <th className="pb-3 pr-2">IDPEL & Nama</th>
-                    <th className="pb-3 pr-2">No. Agenda</th>
-                    <th className="pb-3 pr-2">Tarif/Gol</th>
-                    <th className="pb-3 pr-2 text-right">kWh Temuan</th>
-                    <th className="pb-3 text-right">Tagihan Susulan (TS)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {execSummary.topFindings.map((item, idx) => (
-                    <tr key={idx} className="border-b border-slate-200 dark:border-slate-850 hover:bg-slate-100 dark:hover:bg-slate-900/40 text-slate-700 dark:text-slate-300">
-                      <td className="py-3 pr-2">
-                        <div className="font-extrabold text-slate-800 dark:text-slate-200">{item.nama}</div>
-                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">{item.idpel}</div>
-                      </td>
-                      <td className="py-3 pr-2 text-[10px] font-mono text-slate-500 dark:text-slate-400">{item.noagenda}</td>
-                      <td className="py-3 pr-2">
-                        <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-950 border border-slate-250 dark:border-slate-850 rounded font-bold">{item.tarif}</span>
-                        <span className="text-slate-400 dark:text-slate-500 text-[10px] ml-1">{item.gol}</span>
-                      </td>
-                      <td className="py-3 pr-2 text-right font-semibold text-emerald-600 dark:text-emerald-400">{formatIndoNumber(item.kwh)} kWh</td>
-                      <td className="py-3 text-right font-black text-rose-500 dark:text-rose-400">Rp {formatIndoNumber(item.ts)}</td>
-                    </tr>
-                  ))}
-                  {execSummary.topFindings.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="text-center text-slate-500 py-6">Tidak ada temuan besar.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            {/* Rata-rata Dibutuhkan */}
+            <div className={`p-5 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md} space-y-2`}>
+              <div className="flex items-center gap-2">
+                <div className={`p-2 rounded-lg border ${rataRataDibutuhkan > (monthlyTargets[month - 1] ?? 130205) * 1.2 ? 'bg-rose-500/10 text-rose-500 dark:text-rose-400 border-rose-500/15' : 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/15'}`}>
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kebutuhan/Bulan</span>
+              </div>
+              <div className="text-xl font-black text-slate-900 dark:text-slate-50">{formatIndoNumber(rataRataDibutuhkan)} <span className="text-xs font-bold text-slate-400">kWh</span></div>
+              <div className="text-[10px] text-slate-400 font-semibold">
+                Rata-rata kWh yang harus dicapai di {sisaBulan} bulan tersisa
+              </div>
+              {rataRataDibutuhkan > (monthlyTargets[month - 1] ?? 130205) * 1.2 && (
+                <div className="text-[10px] text-rose-500 dark:text-rose-400 font-bold flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> Melebihi rata-rata target bulanan!
+                </div>
+              )}
+            </div>
+
+            {/* Bulan Terbaik */}
+            <div className={`p-5 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md} space-y-2`}>
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-500/15">
+                  <Trophy className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Bulan Terbaik</span>
+              </div>
+              {bestMonth ? (
+                <>
+                  <div className="text-xl font-black text-emerald-600 dark:text-emerald-400">{bestMonth.month}</div>
+                  <div className="text-[10px] text-slate-400 font-semibold">
+                    {formatIndoNumber(bestMonth.kwh)} kWh · {bestMonth.cases} kasus
+                  </div>
+                </>
+              ) : (
+                <div className="text-sm text-slate-400 font-semibold">Belum ada data</div>
+              )}
+            </div>
+
+            {/* Bulan Terburuk */}
+            <div className={`p-5 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md} space-y-2`}>
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-rose-500/10 text-rose-500 dark:text-rose-400 rounded-lg border border-rose-500/15">
+                  <TrendingDown className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Bulan Terburuk</span>
+              </div>
+              {worstMonth ? (
+                <>
+                  <div className="text-xl font-black text-rose-500 dark:text-rose-400">{worstMonth.month}</div>
+                  <div className="text-[10px] text-slate-400 font-semibold">
+                    {formatIndoNumber(worstMonth.kwh)} kWh · {worstMonth.cases} kasus
+                  </div>
+                </>
+              ) : (
+                <div className="text-sm text-slate-400 font-semibold">Belum ada data</div>
+              )}
+            </div>
+
+          </div>
+
+          {/* SECTION 3b: Skenario Proyeksi Pencapaian Target Tahunan */}
+          <div className={`p-6 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md} space-y-4`}>
+            <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800/80">
+              <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-500/15">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100">Skenario Proyeksi Pencapaian Target Tahunan</h3>
+                <p className="text-[10px] text-slate-400 font-semibold">Simulasi pencapaian target kumulatif tahunan {year} ({formatIndoNumber(totalTargetYear)} kWh) berdasarkan 3 skenario taktis.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              
+              {/* Skenario 1: Apabila Progres Seperti Saat Ini */}
+              <div className="p-4 bg-slate-50/40 dark:bg-slate-950/30 border border-slate-200/50 dark:border-slate-800/50 rounded-xl space-y-3 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Apabila Progres Seperti Saat Ini</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${gapCurrent <= 0 ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/10'}`}>
+                      {gapCurrent <= 0 ? 'TERCAPAI' : 'PERLU AKSELERASI'}
+                    </span>
+                  </div>
+                  <div className="text-lg font-black text-slate-900 dark:text-slate-100">
+                    {formatIndoNumber(projectedKwhCurrent)} <span className="text-xs font-bold text-slate-400">kWh</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
+                    Proyeksi Akhir Tahun
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-350 font-semibold leading-relaxed">
+                    {gapCurrent > 0 ? (
+                      <>
+                        Dengan ritme saat ini, akhir tahun diproyeksikan defisit <span className="font-black text-rose-500">{formatIndoNumber(gapCurrent)} kWh</span>. Agar target tercapai, sisa {remainingMonths} bulan membutuhkan rata-rata <span className="font-black text-slate-800 dark:text-slate-200">{formatIndoNumber(avgRequiredKwhCurrent)} kWh/bulan</span> (naik <span className="font-black text-rose-500">{pctIncreaseRequiredCurrent}%</span> dari rata-rata saat ini).
+                      </>
+                    ) : (
+                      <>
+                        Dengan ritme saat ini, akhir tahun diproyeksikan surplus <span className="font-black text-emerald-500">{formatIndoNumber(Math.abs(gapCurrent))} kWh</span>. Target kumulatif tahunan diproyeksikan dapat tercapai dengan sukses.
+                      </>
+                    )}
+                  </p>
+                </div>
+                
+                <div className="pt-2 border-t border-slate-250/20 dark:border-slate-800/60 text-[10px] font-bold text-slate-450 dark:text-slate-400 space-y-1">
+                  <div className="flex justify-between">
+                    <span>Rata-rata Realisasi:</span>
+                    <span className="text-slate-700 dark:text-slate-200 font-extrabold">{formatIndoNumber(Math.round(avgRealKwh))} kWh/bln</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Kebutuhan Bulanan:</span>
+                    <span className="text-slate-700 dark:text-slate-200 font-extrabold">{formatIndoNumber(avgRequiredKwhCurrent)} kWh/bln</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex justify-between text-[10px] font-bold text-slate-400">
+                    <span>Proyeksi Pencapaian</span>
+                    <span>{Math.round(pctCurrent)}%</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full ${gapCurrent <= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} 
+                      style={{ width: `${Math.min(100, pctCurrent)}%` }} 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Skenario 2: Jika Target Harian Kumulatif Tercapai */}
+              <div className="p-4 bg-slate-50/40 dark:bg-slate-950/30 border border-slate-200/50 dark:border-slate-800/50 rounded-xl space-y-3 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Jika Target Harian Kumulatif Tercapai</span>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10">
+                      TERCAPAI
+                    </span>
+                  </div>
+                  <div className="text-lg font-black text-slate-900 dark:text-slate-100">
+                    {formatIndoNumber(totalTargetYear)} <span className="text-xs font-bold text-slate-400">kWh</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
+                    Disesuaikan untuk Target
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-350 font-semibold leading-relaxed">
+                    {pctDailyIncrease > 0 ? (
+                      <>
+                        Agar target kumulatif tercapai (menutup defisit berjalan), target harian sisa <span className="font-bold text-slate-850 dark:text-slate-150">{remainingWorkingDays} hari kerja</span> tahun ini harus disesuaikan menjadi <span className="font-black text-emerald-500">{formatIndoNumber(newTargetHarian)} kWh/hari</span> (naik <span className="font-black text-rose-500">{pctDailyIncrease}%</span> dari target harian awal).
+                      </>
+                    ) : (
+                      <>
+                        Target kumulatif tahunan berjalan aman. Target harian sisa <span className="font-bold text-slate-850 dark:text-slate-150">{remainingWorkingDays} hari kerja</span> tahun ini disesuaikan menjadi <span className="font-black text-emerald-500">{formatIndoNumber(newTargetHarian)} kWh/hari</span> (turun <span className="font-black text-emerald-600">{Math.abs(pctDailyIncrease)}%</span> dari target harian awal).
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-slate-250/20 dark:border-slate-800/60 text-[10px] font-bold text-slate-450 dark:text-slate-400 space-y-1">
+                  <div className="flex justify-between">
+                    <span>Target Harian Awal:</span>
+                    <span className="text-slate-700 dark:text-slate-200 font-extrabold">{formatIndoNumber(baselineTargetHarian)} kWh/hari</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Target Harian Baru:</span>
+                    <span className="text-slate-700 dark:text-slate-200 font-extrabold">{formatIndoNumber(newTargetHarian)} kWh/hari</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Kebutuhan Bulanan:</span>
+                    <span className="text-slate-700 dark:text-slate-200 font-extrabold">{formatIndoNumber(avgRequiredKwhCurrent)} kWh/bln</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex justify-between text-[10px] font-bold text-slate-400">
+                    <span>Proyeksi Pencapaian</span>
+                    <span>100%</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full rounded-full bg-emerald-500" 
+                      style={{ width: '100%' }} 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Skenario 3: Cara Mencapai Target 110% */}
+              <div className="p-4 bg-slate-50/40 dark:bg-slate-950/30 border border-slate-200/50 dark:border-slate-800/50 rounded-xl space-y-3 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Cara Mencapai Target 110%</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${totalRealYear >= target110Year ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/10'}`}>
+                      {totalRealYear >= target110Year ? 'TERCAPAI' : `PERLU EFFORT +${pctEffortRequired110}%`}
+                    </span>
+                  </div>
+                  <div className="text-lg font-black text-slate-900 dark:text-slate-100">
+                    {formatIndoNumber(Math.round(target110Year))} <span className="text-xs font-bold text-slate-400">kWh</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
+                    Target Optimis (110%)
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-350 font-semibold leading-relaxed">
+                    {totalRealYear < target110Year ? (
+                      <>
+                        Agar target optimis 110% tercapai (<span className="font-black text-slate-800 dark:text-slate-200">{formatIndoNumber(Math.round(target110Year))} kWh</span>), performa di sisa {remainingMonths} bulan harus ditingkatkan sebesar <span className="font-black text-rose-500">{pctEffortRequired110}%</span> dari rata-rata saat ini (membutuhkan rata-rata <span className="font-black text-slate-800 dark:text-slate-200">{formatIndoNumber(avgRequiredKwh110)} kWh/bulan</span>).
+                      </>
+                    ) : (
+                      <>
+                        Target optimis 110% tahunan sebesar <span className="font-black text-emerald-500">{formatIndoNumber(Math.round(target110Year))} kWh</span> telah berhasil dilampaui!
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-slate-250/20 dark:border-slate-800/60 text-[10px] font-bold text-slate-450 dark:text-slate-400 space-y-1">
+                  <div className="flex justify-between">
+                    <span>Rata-rata Realisasi:</span>
+                    <span className="text-slate-700 dark:text-slate-200 font-extrabold">{formatIndoNumber(Math.round(avgRealKwh))} kWh/bln</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Kebutuhan Bulanan (110%):</span>
+                    <span className="text-slate-700 dark:text-slate-200 font-extrabold">{formatIndoNumber(avgRequiredKwh110)} kWh/bln</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex justify-between text-[10px] font-bold text-slate-400">
+                    <span>Progres Terhadap Target 110%</span>
+                    <span>{Math.round(target110Year > 0 ? (totalRealYear / target110Year) * 100 : 0)}%</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full ${totalRealYear >= target110Year ? 'bg-emerald-500' : 'bg-rose-500'}`} 
+                      style={{ width: `${Math.min(100, target110Year > 0 ? (totalRealYear / target110Year) * 100 : 0)}%` }} 
+                    />
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
 
         </div>
-      )}
+        );
+      })()}
 
     </div>
   );

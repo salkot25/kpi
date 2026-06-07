@@ -85,6 +85,10 @@ export interface P2TLResponse {
     golonganBreakdown?: Array<{ class: string; cases: number; kwh: number }>;
     dayaBreakdown?: Array<{ class: string; cases: number; kwh: number }>;
     kwhBreakdown?: Array<{ class: string; cases: number; kwh: number }>;
+    prevTotalCasesYear?: number;
+    prevTotalKwhYear?: number;
+    prevTotalTsYear?: number;
+    prevMonthlyTrend?: Array<{ month: string; cases: number; kwh: number; ts: number }>;
     topFindings: Array<{
       noagenda: string;
       idpel: string;
@@ -156,9 +160,9 @@ export interface P2TLGantiMeterResponse {
   appliedMonth: string;
   appliedYear: string;
   sortApplied?: 'date_desc' | 'date_asc';
-  dailyTrend?: Array<{ label: string; count: number; target: number }>;
-  weeklyTrend?: Array<{ label: string; count: number; target: number }>;
-  monthlyTrend?: Array<{ label: string; count: number; target: number }>;
+  dailyTrend?: Array<{ label: string; count: number; target: number; prepaidCount?: number; postpaidCount?: number }>;
+  weeklyTrend?: Array<{ label: string; count: number; target: number; prepaidCount?: number; postpaidCount?: number }>;
+  monthlyTrend?: Array<{ label: string; count: number; target: number; prepaidCount?: number; postpaidCount?: number }>;
 }
 
 export interface LogsQueryParams {

@@ -111,6 +111,10 @@ export const Dashboard: React.FC = () => {
     golonganBreakdown: [],
     dayaBreakdown: [],
     kwhBreakdown: [],
+    prevTotalCasesYear: 0,
+    prevTotalKwhYear: 0,
+    prevTotalTsYear: 0,
+    prevMonthlyTrend: [],
     topFindings: []
   });
 

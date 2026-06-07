@@ -1,0 +1,36 @@
+Created At: 2026-06-07T01:08:48Z
+Completed At: 2026-06-07T01:08:48Z
+File Path: `file:///d:/Antigravity/p2tl/src/presentation/pages/GantiMeter.tsx`
+Total Lines: 797
+Total Bytes: 45753
+Showing lines 578 to 605
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+578: 
+579:             {reasonsBreakdown.length === 0 ? (
+580:               <div className="py-12 text-center text-xs text-slate-500 font-semibold">Tidak ada data alasan.</div>
+581:             ) : (
+582:               <div className="space-y-4">
+583:                 {reasonsBreakdown.map((item, idx) => {
+584:                   const pct = totalFiltered > 0 ? Math.round((item.count / totalFiltered) * 100) : 0;
+585:                   return (
+586:                     <div key={item.reason} className="space-y-1 text-xs">
+587:                       <div className="flex justify-between font-semibold text-slate-750 dark:text-slate-300">
+588:                         <span className="truncate pr-2">{item.reason || 'Lainnya'}</span>
+589:                         <span className="flex-shrink-0 text-slate-500 dark:text-slate-400">{item.count} unit</span>
+590:                       </div>
+591:                       <div className="h-2 w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-full overflow-hidden">
+592:                         <div
+593:                           className={`h-full bg-gradient-to-r ${BAR_COLORS[idx % BAR_COLORS.length]} shadow-[0_0_8px_rgba(16,185,129,0.2)] transition-all duration-500`}
+594:                           style={{ width: `${Math.min(100, (item.count / (reasonsBreakdown[0]?.count || 1)) * 100)}%` }}
+595:                         />
+596:                       </div>
+597:                     </div>
+598:                   );
+599:                 })}
+600:               </div>
+601:             )}
+602:           </div>
+603:         </div>
+604:       )}
+605: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

@@ -1,0 +1,69 @@
+Created At: 2026-06-07T01:13:12Z
+Completed At: 2026-06-07T01:13:12Z
+File Path: `file:///d:/Antigravity/p2tl/src/presentation/pages/GantiMeter.tsx`
+Total Lines: 825
+Total Bytes: 46532
+Showing lines 135 to 195
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+135:         setRecords(response.records || []);
+136:         if (response.pagination) setPagination(response.pagination);
+137:         if (response.stats) setStats({
+138:           todayCount: response.stats.todayCount || 0,
+139:           monthCount: response.stats.monthCount || 0,
+140:           yearCount: response.stats.yearCount || 0
+141:         });
+142:         if (response.reasonsBreakdown) setReasonsBreakdown(response.reasonsBreakdown);
+143:         if (response.availableYears) setAvailableYears(response.availableYears);
+144:         if (isInitial) {
+145:           setSelectedMonth(response.appliedMonth || 'all');
+146:           setSelectedYear(response.appliedYear || 'all');
+147:         }
+148:       } else {
+149:         setErrorMsg('Gagal mengambil data: ' + (response as any).message);
+150:       }
+151:     } catch (err: any) {
+152:       setErrorMsg('Gagal terhubung ke API Google Sheets.');
+153:     } finally {
+154:       setLoading(false);
+155:     }
+156:   };
+157: 
+158:   useEffect(() => {
+159:     fetchData();
+160:   }, [currentPage, itemsPerPage, debouncedSearch, selectedMonth, selectedYear, selectedDayDate, selectedSort]);
+161: 
+162:   const handleResetFilters = () => {
+163:     setSearchTerm('');
+164:     setDebouncedSearch('');
+165:     setSelectedMonth('all');
+166:     setSelectedYear('all');
+167:     setSelectedDayDate('');
+168:     setSelectedSort('date_desc');
+169:     setCurrentPage(1);
+170:   };
+171: 
+172:   const handlePageChange = (newPage: number) => {
+173:     if (newPage >= 1 && newPage <= pagination.totalPages) setCurrentPage(newPage);
+174:   };
+175: 
+176:   const totalPages = pagination.totalPages;
+177:   const totalFiltered = pagination.totalFiltered;
+178: 
+179:   // Derived: bulan aktif untuk Ringkasan
+180:   const activeMonthIndex = selectedMonth && selectedMonth !== 'all'
+181:     ? parseInt(selectedMonth, 10) - 1
+182:     : new Date().getMonth();
+183:   const activeMonthName = MONTH_NAMES_ID[activeMonthIndex] || '';
+184:   const bulanPercent = targetPerBulan > 0 ? Math.min(100, Math.round((stats.monthCount / targetPerBulan) * 100)) : 0;
+185: 
+186:   return (
+187:     <div className="space-y-6">
+188: 
+189:       {/* ── TOP HEADER BANNER ── */}
+190:       <div className={`p-6 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md} flex flex-col md:flex-row justify-between items-start md:items-center gap-4`}>
+191:         <div>
+192:           <h2 className="text-lg font-black tracking-tight mb-1 text-slate-900 dark:text-slate-50">
+193:             Monitoring Penggantian kWh Meter
+194:           </h2>
+195:           <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1.5">
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

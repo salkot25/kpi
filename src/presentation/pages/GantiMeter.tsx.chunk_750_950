@@ -1,0 +1,57 @@
+Created At: 2026-06-07T01:13:48Z
+Completed At: 2026-06-07T01:13:48Z
+File Path: `file:///d:/Antigravity/p2tl/src/presentation/pages/GantiMeter.tsx`
+Total Lines: 1027
+Total Bytes: 55223
+Showing lines 750 to 950
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+750:               <div className={`p-5 ${colors.card} ${borderRadius.xl} border ${colors.border} flex items-center justify-between`}>
+751:                 <div>
+752:                   <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Rata-Rata Bulanan</span>
+753:                   <div className="text-xl font-black text-slate-800 dark:text-slate-50 mt-1">{formatIndoNumber(Math.round(totalYearTarget / 12))} Unit</div>
+754:                 </div>
+755:                 <div className="p-3 bg-slate-100 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-850 rounded-xl">
+756:                   <Zap className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+757:                 </div>
+758:               </div>
+759:             </div>
+760: 
+761:             {/* Table targets grid */}
+762:             <div className={`p-6 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md} relative`}>
+763:               {loadingTargets && (
+764:                 <div className="absolute inset-0 bg-slate-100/60 dark:bg-slate-950/60 backdrop-blur-xs rounded-2xl flex items-center justify-center flex-col gap-2 z-10">
+765:                   <svg className="animate-spin h-8 w-8 text-emerald-500" fill="none" viewBox="0 0 24 24">
+766:                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+767:                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+768:  
+<truncated 10854 bytes>
+e-500 rounded-lg transition-colors">
+923:                 <X className="w-4 h-4" />
+924:               </button>
+925:             </div>
+926: 
+927:             <div className="p-6 overflow-y-auto space-y-6 text-slate-700 dark:text-slate-300">
+928: 
+929:               <div>
+930:                 <h4 className="text-xs font-black tracking-wider text-slate-400 uppercase mb-3 flex items-center gap-2">
+931:                   <Layers className="w-4 h-4 text-sky-500" /><span>Informasi Pelanggan</span>
+932:                 </h4>
+933:                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 p-4 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200/60 dark:border-slate-850">
+934:                   {[
+935:                     { label: 'ID Pelanggan', value: selectedRecord.idpel },
+936:                     { label: 'Nama Pelanggan', value: selectedRecord.nama },
+937:                     { label: 'Tarif / Daya', value: `${selectedRecord.tarif} / ${selectedRecord.daya} VA` },
+938:                     { label: 'Pembatas Meter', value: selectedRecord.kdpembmeter || '-' },
+939:                   ].map(f => (
+940:                     <div key={f.label}>
+941:                       <span className="text-[10px] font-bold text-slate-400 uppercase block">{f.label}</span>
+942:                       <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100">{f.value}</span>
+943:                     </div>
+944:                   ))}
+945:                   <div className="md:col-span-2">
+946:                     <span className="text-[10px] font-bold text-slate-400 uppercase block">Alamat</span>
+947:                     <span className="text-xs font-medium text-slate-800 dark:text-slate-200">{selectedRecord.alamat}</span>
+948:                   </div>
+949:                 </div>
+950:               </div>
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

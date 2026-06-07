@@ -152,6 +152,9 @@ export interface P2TLGantiMeterResponse {
   appliedMonth: string;
   appliedYear: string;
   sortApplied?: 'date_desc' | 'date_asc';
+  dailyTrend?: Array<{ label: string; count: number; target: number }>;
+  weeklyTrend?: Array<{ label: string; count: number; target: number }>;
+  monthlyTrend?: Array<{ label: string; count: number; target: number }>;
 }
 
 export interface LogsQueryParams {

@@ -1,0 +1,56 @@
+Created At: 2026-06-07T01:14:16Z
+Completed At: 2026-06-07T01:14:16Z
+File Path: `file:///d:/Antigravity/p2tl/src/presentation/pages/GantiMeter.tsx`
+Total Lines: 702
+Total Bytes: 36590
+Showing lines 1 to 48
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: import React, { useState, useEffect } from 'react';
+2: import { 
+3:   Calendar, 
+4:   Search, 
+5:   Filter, 
+6:   RotateCw, 
+7:   Eye, 
+8:   X, 
+9:   ChevronLeft, 
+10:   ChevronRight, 
+11:   Layers, 
+12:   Wrench, 
+13:   Gauge, 
+14:   Clock,
+15:   TrendingUp
+16: } from 'lucide-react';
+17: import { borderRadius, shadows } from '../../design-system/tokens';
+18: import { GasP2TLRepository } from '../../data/repositories/gas-p2tl.repository';
+19: import type { P2TLGantiMeterRecord } from '../../core/entities/report.entity';
+20: 
+21: const p2tlRepository = new GasP2TLRepository();
+22: 
+23: export const GantiMeter: React.FC = () => {
+24:   const [records, setRecords] = useState<P2TLGantiMeterRecord[]>([]);
+25:   const [loading, setLoading] = useState<boolean>(true);
+26:   const [errorMsg, setErrorMsg] = useState<string>('');
+27: 
+28:   // Filter states
+29:   const [searchTerm, setSearchTerm] = useState<string>('');
+30:   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+31:   const [selectedMonth, setSelectedMonth] = useState<string>(''); // empty initially for smart default
+32:   const [selectedYear, setSelectedYear] = useState<string>('');   // empty initially for smart default
+33:   const [selectedDayDate, setSelectedDayDate] = useState<string>(''); // YYYY-MM-DD
+34:   const [selectedSort, setSelectedSort] = useState<'date_desc' | 'date_asc'>('date_desc');
+35: 
+36:   // Pagination states
+37:   const [currentPage, setCurrentPage] = useState<number>(1);
+38:   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+39:   const [pagination, setPagination] = useState({
+40:     page: 1,
+41:     limit: 10,
+42:     totalFiltered: 0,
+43:     totalPages: 1
+44:   });
+45: 
+46:   // Backend stats, breakdown & metadata states
+47:   const [stats, setStats] = useState({ todayCount: 0, monthCount: 0, yearCount: 0 });
+48:   const [reasonsBreakdown, setReasonsBreakdown] = useState<Array<{ reason: string; count: number }>>([]);
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

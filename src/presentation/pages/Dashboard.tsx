@@ -587,7 +587,7 @@ export const Dashboard: React.FC = () => {
             <MonthlyTargets workingDays={workingDays} />
           ) : activeTab === 'ganti_meter' ? (
             /* kWh Meter Replacement View */
-            <GantiMeter />
+            <GantiMeter workingDays={workingDays} />
           ) : activeTab === 'settings' ? (
             /* Settings View */
             <div className="space-y-6">

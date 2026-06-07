@@ -10,4 +10,6 @@ export interface IP2TLRepository {
   getSettings(): Promise<Record<string, string>>;
   saveSettings(settings: Record<string, string>): Promise<boolean>;
   getGantiMeter(params?: GantiMeterParams): Promise<P2TLGantiMeterResponse>;
+  getGantiMeterTargets(year: string): Promise<number[]>;
+  saveGantiMeterTargets(year: string, targets: number[]): Promise<boolean>;
 }

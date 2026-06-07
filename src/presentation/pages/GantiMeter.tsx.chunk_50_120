@@ -1,0 +1,79 @@
+Created At: 2026-06-07T01:13:09Z
+Completed At: 2026-06-07T01:13:09Z
+File Path: `file:///d:/Antigravity/p2tl/src/presentation/pages/GantiMeter.tsx`
+Total Lines: 825
+Total Bytes: 46532
+Showing lines 50 to 120
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+50:   'from-blue-400 to-indigo-500',
+51: ];
+52: 
+53: // Helper to get count of working days in a month based on settings
+54: function getWorkingDaysCount(monthIndex: number, yearStr: string, setting: '5' | '6' | '7'): number {
+55:   const year = parseInt(yearStr, 10);
+56:   const totalDays = new Date(year, monthIndex + 1, 0).getDate();
+57:   let workingDays = 0;
+58:   
+59:   for (let d = 1; d <= totalDays; d++) {
+60:     const date = new Date(year, monthIndex, d);
+61:     const dayOfWeek = date.getDay(); // 0 is Sunday, 6 is Saturday
+62:     
+63:     if (setting === '5') {
+64:       if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+65:         workingDays++;
+66:       }
+67:     } else if (setting === '6') {
+68:       if (dayOfWeek !== 0) {
+69:         workingDays++;
+70:       }
+71:     } else {
+72:       workingDays++;
+73:     }
+74:   }
+75:   return workingDays;
+76: }
+77: 
+78: export const GantiMeter: React.FC = () => {
+79:   const [subTab, setSubTab] = useState<'realisasi' | 'target' | 'ringkasan'>('realisasi');
+80:   const [records, setRecords] = useState<P2TLGantiMeterRecord[]>([]);
+81:   const [loading, setLoading] = useState<boolean>(true);
+82:   const [errorMsg, setErrorMsg] = useState<string>('');
+83: 
+84:   // Filter states
+85:   const [searchTerm, setSearchTerm] = useState<string>('');
+86:   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+87:   const [selectedMonth, setSelectedMonth] = useState<string>('');
+88:   const [selectedYear, setSelectedYear] = useState<string>('');
+89:   const [selectedDayDate, setSelectedDayDate] = useState<string>('');
+90:   const [selectedSort, setSelectedSort] = useState<'date_desc' | 'date_asc'>('date_desc');
+91: 
+92:   // Pagination
+93:   const [currentPage, setCurrentPage] = useState<number>(1);
+94:   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+95:   const [pagination, setPagination] = useState({ page: 1, limit: 10, totalFiltered: 0, totalPages: 1 });
+96: 
+97:   // Stats & breakdown
+98:   const [stats, setStats] = useState({ todayCount: 0, monthCount: 0, yearCount: 0 });
+99:   const [reasonsBreakdown, setReasonsBreakdown] = useState<Array<{ reason: string; count: number }>>([]);
+100:   const [availableYears, setAvailableYears] = useState<string[]>([String(new Date().getFullYear())]);
+101: 
+102:   // Target state (simple manual input per bulan)
+103:   const [targetPerBulan, setTargetPerBulan] = useState<number>(50);
+104: 
+105:   // Detail Modal
+106:   const [selectedRecord, setSelectedRecord] = useState<P2TLGantiMeterRecord | null>(null);
+107: 
+108:   // Search debounce
+109:   useEffect(() => {
+110:     const handler = setTimeout(() => {
+111:       setDebouncedSearch(searchTerm);
+112:       setCurrentPage(1);
+113:     }, 300);
+114:     return () => clearTimeout(handler);
+115:   }, [searchTerm]);
+116: 
+117:   // Fetch data
+118:   const fetchData = async () => {
+119:     setLoading(true);
+120:     setErrorMsg('');
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

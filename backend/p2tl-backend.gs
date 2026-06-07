@@ -77,6 +77,7 @@ function setupSheets() {
   getOrCreateSheet("Targets", targetHeaders);
   getOrCreateSheet("Realisasi_Logs", logHeaders);
   getOrCreateSheet("Targets_Bulanan", monthlyTargetHeaders);
+  getOrCreateSheet("Targets_Ganti_Meter", ["Year", "Month", "Target_Qty"]);
   getOrCreateSheet("Settings", ["Key", "Value"]);
 }
 
@@ -420,8 +421,8 @@ function doGet(e) {
       }
       if (!hasData) continue;
       
-      // Parse record date for stats & filtering
-      var recDateStr = record["TGLNYALA"] || record["TGLREMAJA"] || "";
+      // Parse record date for stats & filtering (use TGLREMAJA only)
+      var recDateStr = record["TGLREMAJA"] || "";
       var recDate = recDateStr ? parseDateRegister(recDateStr) : null;
       var ry = null, rm = null, rd = null;
       var recTs = 0;
@@ -535,6 +536,134 @@ function doGet(e) {
     var availableYears = Object.keys(availableYearsSet).sort().reverse();
     if (availableYears.length === 0) availableYears = [String(new Date().getFullYear())];
     
+    // ── PASS 3: Calculate trends for charts ──
+    var dailyTrend = [];
+    var weeklyTrend = [];
+    var monthlyTrend = [];
+    
+    var isSpecificMonth = (appliedMonth && appliedMonth !== "all");
+    var isSpecificYear = (appliedYear && appliedYear !== "all");
+    
+    var targetYearInt = isSpecificYear ? parseInt(appliedYear, 10) : new Date().getFullYear();
+    var targetMonthInt = isSpecificMonth ? parseInt(appliedMonth, 10) - 1 : new Date().getMonth();
+    
+    // Load Targets_Ganti_Meter for the target year
+    var gantiMeterTargetsMap = {};
+    for (var m = 1; m <= 12; m++) {
+      gantiMeterTargetsMap[m] = 50;
+    }
+    var gmTargetSheet = getSheetCaseInsensitive(ss, "Targets_Ganti_Meter");
+    if (gmTargetSheet) {
+      var gmTargetData = gmTargetSheet.getDataRange().getValues();
+      for (var i = 1; i < gmTargetData.length; i++) {
+        var rowYear = Number(gmTargetData[i][0]);
+        if (rowYear === targetYearInt) {
+          var monthNum = Number(gmTargetData[i][1]);
+          var qty = Number(gmTargetData[i][2]);
+          gantiMeterTargetsMap[monthNum] = qty;
+        }
+      }
+    }
+    
+    // Days in that month
+    var daysCount = new Date(targetYearInt, targetMonthInt + 1, 0).getDate();
+    
+    // Initialize daily trend map
+    var dailyMap = {};
+    for (var d = 1; d <= daysCount; d++) {
+      dailyMap[d] = 0;
+    }
+    
+    // Initialize weekly trend map
+    var weeklyMap = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    
+    // Count matches in filteredRecords
+    for (var fi = 0; fi < filteredRecords.length; fi++) {
+      var rec = filteredRecords[fi];
+      var recYear = rec._ry;
+      var recMonth = rec._rm;
+      if (recYear === targetYearInt && recMonth === targetMonthInt && rec._dateStr) {
+        var recDate = parseDateRegister(rec._dateStr);
+        if (recDate) {
+          var dayNum = recDate.getDate();
+          if (dayNum >= 1 && dayNum <= daysCount) {
+            dailyMap[dayNum]++;
+            
+            if (dayNum <= 7) weeklyMap[1]++;
+            else if (dayNum <= 14) weeklyMap[2]++;
+            else if (dayNum <= 21) weeklyMap[3]++;
+            else if (dayNum <= 28) weeklyMap[4]++;
+            else weeklyMap[5]++;
+          }
+        }
+      }
+    }
+    
+    // Workdays count for target division (5 work days/week)
+    var workingDaysInMonth = getWorkingDaysInMonth(targetYearInt, targetMonthInt, "5");
+    var targetForMonth = gantiMeterTargetsMap[targetMonthInt + 1];
+    
+    for (var d = 1; d <= daysCount; d++) {
+      var dateObj = new Date(targetYearInt, targetMonthInt, d);
+      var dayOfWeek = dateObj.getDay();
+      var isWorkingDay = (dayOfWeek !== 0 && dayOfWeek !== 6);
+      var dayTarget = isWorkingDay ? Math.round(targetForMonth / workingDaysInMonth) : 0;
+      
+      dailyTrend.push({
+        label: String(d),
+        count: dailyMap[d],
+        target: dayTarget
+      });
+    }
+    
+    var weeklyTargets = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    var ranges = [
+      { w: 1, start: 1, end: 7 },
+      { w: 2, start: 8, end: 14 },
+      { w: 3, start: 15, end: 21 },
+      { w: 4, start: 22, end: 28 },
+      { w: 5, start: 29, end: daysCount }
+    ];
+    ranges.forEach(function(r) {
+      var weekTarget = 0;
+      for (var d = r.start; d <= r.end; d++) {
+        var dateObj = new Date(targetYearInt, targetMonthInt, d);
+        var dayOfWeek = dateObj.getDay();
+        var isWorkingDay = (dayOfWeek !== 0 && dayOfWeek !== 6);
+        weekTarget += isWorkingDay ? Math.round(targetForMonth / workingDaysInMonth) : 0;
+      }
+      weeklyTargets[r.w] = weekTarget;
+    });
+    
+    for (var w = 1; w <= 5; w++) {
+      weeklyTrend.push({
+        label: "W" + w,
+        count: weeklyMap[w],
+        target: weeklyTargets[w]
+      });
+    }
+    
+    var monthlyMap = {};
+    var monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+    for (var m = 0; m < 12; m++) {
+      monthlyMap[m] = 0;
+    }
+    
+    for (var fi = 0; fi < allRecords.length; fi++) {
+      var rec = allRecords[fi];
+      if (rec._ry === targetYearInt && rec._rm !== null) {
+        monthlyMap[rec._rm]++;
+      }
+    }
+    
+    for (var m = 0; m < 12; m++) {
+      monthlyTrend.push({
+        label: monthNames[m],
+        count: monthlyMap[m],
+        target: gantiMeterTargetsMap[m + 1]
+      });
+    }
+
     // ── Paginate ──
     var totalFiltered = filteredRecords.length;
     var totalPages = Math.ceil(totalFiltered / limitParam) || 1;
@@ -570,7 +699,10 @@ function doGet(e) {
       availableYears: availableYears,
       appliedMonth: appliedMonth,
       appliedYear: appliedYear,
-      sortApplied: sortParam
+      sortApplied: sortParam,
+      dailyTrend: dailyTrend,
+      weeklyTrend: weeklyTrend,
+      monthlyTrend: monthlyTrend
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
@@ -609,6 +741,47 @@ function doGet(e) {
         targetsList.push({
           Month: m,
           Target_kWh: defaultTarget
+        });
+      }
+    } else {
+      // Sort targetsList by Month ascending
+      targetsList.sort(function(a, b) { return a.Month - b.Month; });
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "success",
+      data: targetsList
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  if (action === "get_ganti_meter_targets") {
+    var yearParam = e && e.parameter && e.parameter.year;
+    if (!yearParam) {
+      yearParam = String(new Date().getFullYear());
+    }
+    var gantiMeterSheet = getOrCreateSheet("Targets_Ganti_Meter", ["Year", "Month", "Target_Qty"]);
+    var gantiMeterData = gantiMeterSheet.getDataRange().getValues();
+    var targetsList = [];
+    
+    // Check if we already have records for this year
+    for (var i = 1; i < gantiMeterData.length; i++) {
+      var rowYear = String(gantiMeterData[i][0]).trim();
+      if (rowYear === yearParam) {
+        targetsList.push({
+          Month: Number(gantiMeterData[i][1]),
+          Target_Qty: Number(gantiMeterData[i][2])
+        });
+      }
+    }
+    
+    // If no records found for this year, generate defaults, write them to the sheet, and return them
+    if (targetsList.length === 0) {
+      for (var m = 1; m <= 12; m++) {
+        var defaultTarget = 50; // default target quantity per month
+        gantiMeterSheet.appendRow([Number(yearParam), m, defaultTarget]);
+        targetsList.push({
+          Month: m,
+          Target_Qty: defaultTarget
         });
       }
     } else {
@@ -1275,6 +1448,35 @@ function doPost(e) {
       
       response.status = "success";
       response.message = "Monthly targets saved successfully.";
+      return ContentService.createTextOutput(JSON.stringify(response))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // Handle ganti meter target save action
+    if (postData && postData.action === "save_ganti_meter_targets") {
+      var year = String(postData.year).trim();
+      var targets = postData.targets; // Array of 12 numbers
+      
+      var gantiMeterSheet = getOrCreateSheet("Targets_Ganti_Meter", ["Year", "Month", "Target_Qty"]);
+      var gantiMeterData = gantiMeterSheet.getDataRange().getValues();
+      
+      // Delete existing rows for this year (excluding header)
+      for (var i = gantiMeterData.length - 1; i >= 1; i--) {
+        var rowYear = String(gantiMeterData[i][0]).trim();
+        if (rowYear === year) {
+          gantiMeterSheet.deleteRow(i + 1); // 1-indexed
+        }
+      }
+      
+      // Append new targets
+      for (var m = 0; m < 12; m++) {
+        var mNum = m + 1;
+        var targetQty = Number(targets[m]) || 0;
+        gantiMeterSheet.appendRow([Number(year), mNum, targetQty]);
+      }
+      
+      response.status = "success";
+      response.message = "Ganti Meter targets saved successfully.";
       return ContentService.createTextOutput(JSON.stringify(response))
         .setMimeType(ContentService.MimeType.JSON);
     }

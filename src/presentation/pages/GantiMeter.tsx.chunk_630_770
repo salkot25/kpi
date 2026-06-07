@@ -1,0 +1,62 @@
+Created At: 2026-06-07T01:13:34Z
+Completed At: 2026-06-07T01:13:34Z
+File Path: `file:///d:/Antigravity/p2tl/src/presentation/pages/GantiMeter.tsx`
+Total Lines: 956
+Total Bytes: 50586
+Showing lines 630 to 770
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+630:                       return pages.map((p, i) => p < 0
+631:                         ? <span key={`e${i}`} className="px-1 text-slate-300 text-xs">…</span>
+632:                         : <button key={`p${p}`} onClick={() => handlePageChange(p)}
+633:                             className={`min-w-[28px] h-7 px-1.5 text-xs font-bold rounded-lg border transition-all ${
+634:                               currentPage === p
+635:                                 ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
+636:                                 : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'
+637:                             }`}>{p}</button>
+638:                       );
+639:                     })()}
+640:                     <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}
+641:                       className="p-1.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none text-slate-500 transition-colors">
+642:                       <ChevronRight className="w-3.5 h-3.5" />
+643:                     </button>
+644:                   </div>
+645:                 </div>
+646:               )}
+647:             </div>
+648:           </div>
+649:         </>
+650:       )}
+651: 
+652:       {/* ═══════════════════════════════════════════════════════════
+<truncated 5773 bytes>
+            ) : (
+742:               <div className="space-y-4">
+743:                 {reasonsBreakdown.map((item, idx) => {
+744:                   return (
+745:                     <div key={item.reason} className="space-y-1 text-xs">
+746:                       <div className="flex justify-between font-semibold text-slate-750 dark:text-slate-300">
+747:                         <span className="truncate pr-2">{item.reason || 'Lainnya'}</span>
+748:                         <span className="flex-shrink-0 text-slate-500 dark:text-slate-400">{item.count} unit</span>
+749:                       </div>
+750:                       <div className="h-2 w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-full overflow-hidden">
+751:                         <div
+752:                           className={`h-full bg-gradient-to-r ${BAR_COLORS[idx % BAR_COLORS.length]} shadow-[0_0_8px_rgba(16,185,129,0.2)] transition-all duration-500`}
+753:                           style={{ width: `${Math.min(100, (item.count / (reasonsBreakdown[0]?.count || 1)) * 100)}%` }}
+754:                         />
+755:                       </div>
+756:                     </div>
+757:                   );
+758:                 })}
+759:               </div>
+760:             )}
+761:           </div>
+762:         </div>
+763:       )}
+764: 
+765:       {/* ═══════════════════════════════════════════════════════════
+766:           TAB 3 — RINGKASAN
+767:       ═══════════════════════════════════════════════════════════ */}
+768:       {subTab === 'ringkasan' && (
+769:         <div className="space-y-6">
+770: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

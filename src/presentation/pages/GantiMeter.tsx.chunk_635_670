@@ -1,0 +1,44 @@
+Created At: 2026-06-07T01:14:02Z
+Completed At: 2026-06-07T01:14:03Z
+File Path: `file:///d:/Antigravity/p2tl/src/presentation/pages/GantiMeter.tsx`
+Total Lines: 1015
+Total Bytes: 54718
+Showing lines 635 to 670
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+635:                                 ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
+636:                                 : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'
+637:                             }`}>{p}</button>
+638:                       );
+639:                     })()}
+640:                     <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}
+641:                       className="p-1.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:pointer-event      {/* ═══════════════════════════════════════════════════════════
+642:           TAB 2 — TARGET
+643:       ═══════════════════════════════════════════════════════════ */}
+644:       {subTab === 'target' && (() => {
+645:         const totalYearTarget = targetUnits.reduce((sum, val) => sum + val, 0);
+646:         const targetSemester1 = targetUnits.slice(0, 6).reduce((sum, val) => sum + val, 0);
+647:         const targetSemester2 = targetUnits.slice(6, 12).reduce((sum, val) => sum + val, 0);
+648:         
+649:         // Calculate cumulative targets
+650:         const cumulativeTargetUnits = targetUnits.reduce<number[]>((acc, currentVal, idx) => {
+651:           if (idx === 0) {
+652:             acc.push(currentVal);
+653:           } else {
+654:             acc.push(acc[idx - 1] + currentVal);
+655:           }
+656:           return acc;
+657:         }, []);
+658: 
+659:         return (
+660:           <div className="space-y-6">
+661:             
+662:             {/* Top action header card */}
+663:             <div className={`p-6 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md} flex flex-col md:flex-row justify-between items-start md:items-center gap-4`}>
+664:               <div>
+665:                 <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2 mb-1">
+666:                   <Zap className="w-4 h-4 text-amber-500" />
+667:                   <span>Manajemen Target Bulanan Ganti Meter</span>
+668:                 </h3>
+669:                 <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1.5">
+670:                   <Calendar className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

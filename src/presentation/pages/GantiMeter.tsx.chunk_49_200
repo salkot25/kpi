@@ -1,0 +1,82 @@
+Created At: 2026-06-07T01:14:19Z
+Completed At: 2026-06-07T01:14:19Z
+File Path: `file:///d:/Antigravity/p2tl/src/presentation/pages/GantiMeter.tsx`
+Total Lines: 702
+Total Bytes: 36590
+Showing lines 49 to 200
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+49:   const [availableYears, setAvailableYears] = useState<string[]>([String(new Date().getFullYear())]);
+50: 
+51:   // Detail Modal state
+52:   const [selectedRecord, setSelectedRecord] = useState<P2TLGantiMeterRecord | null>(null);
+53: 
+54:   // Search debouncing
+55:   useEffect(() => {
+56:     const handler = setTimeout(() => {
+57:       setDebouncedSearch(searchTerm);
+58:       setCurrentPage(1);
+59:     }, 300);
+60:     return () => clearTimeout(handler);
+61:   }, [searchTerm]);
+62: 
+63:   // Fetch data from backend
+64:   const fetchGantiMeterData = async () => {
+65:     setLoading(true);
+66:     setErrorMsg('');
+67:     try {
+68:       const isInitial = selectedMonth === '' && selectedYear === '';
+69:       const response = await p2tlRepository.getGantiMeter({
+70:         page: currentPage,
+71:         limit: itemsPerPage,
+72:         month: selectedMonth || undefined,
+73:         year: selectedYear || undefined,
+74:         search: debouncedSearch || undefined,
+75:         day: selectedDayDate || undefined,
+76:         sort: selectedSort,
+77:         smartDefault: isInitial ? 'true' : 'false'
+78:       });
+79: 
+80:       if (response.status === 'success') {
+81:         setRecords(response.records || []);
+82:         if (response.pagination) {
+83:           setPagination(response.pagination);
+84:         }
+85:         if (response.stats) {
+86:           setStats({
+87:             todayCount: response.stats.todayCount || 0,
+88:             monthCount: response.stats.monthCount || 0,
+89:             yearCount: response.stats.year
+<truncated 3371 bytes>
+0 border border-slate-200 dark:border-slate-800 ${borderRadius.xl} transition-all`}
+170:         >
+171:           <RotateCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+172:           <span>Refresh Data</span>
+173:         </button>
+174:       </div>
+175: 
+176:       {errorMsg && (
+177:         <div className="p-4 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-xl text-xs font-semibold">
+178:           {errorMsg}
+179:         </div>
+180:       )}
+181: 
+182:       {/* 2. Dynamic statistics cards */}
+183:       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+184:         
+185:         {/* Today Card */}
+186:         <div className={`p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 ${borderRadius.xxl} ${shadows.md} relative overflow-hidden group`}>
+187:           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-sky-500/10 to-indigo-500/10 rounded-full blur-xl transform translate-x-8 -translate-y-8 group-hover:scale-125 transition-transform duration-500"></div>
+188:           <div className="flex items-center justify-between">
+189:             <span className="text-xs font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase">HARI INI</span>
+190:             <div className="p-2 bg-sky-500/10 text-sky-500 rounded-lg">
+191:               <Clock className="w-5 h-5" />
+192:             </div>
+193:           </div>
+194:           <div className="mt-4">
+195:             <h3 className="text-3xl font-black text-slate-800 dark:text-slate-100 group-hover:text-sky-500 transition-colors">{stats.todayCount}</h3>
+196:             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-semibold">Meter diganti hari ini</p>
+197:           </div>
+198:         </div>
+199: 
+200:         {/* Month Card */}
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

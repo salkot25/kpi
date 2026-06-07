@@ -552,6 +552,9 @@ export class GasP2TLRepository implements IP2TLRepository {
       availableYears: [curYear],
       appliedMonth: curMonth,
       appliedYear: curYear,
+      dailyTrend: [],
+      weeklyTrend: [],
+      monthlyTrend: [],
     };
 
     if (!gasUrl) return fallbackResponse;
@@ -576,7 +579,6 @@ export class GasP2TLRepository implements IP2TLRepository {
 
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const result = await response.json();
-
       if (result.status === 'success') {
         if (Array.isArray(result.records)) {
           result.records = result.records.map(mapRecord);
@@ -589,4 +591,73 @@ export class GasP2TLRepository implements IP2TLRepository {
       return fallbackResponse;
     }
   }
+
+  async getGantiMeterTargets(year: string): Promise<number[]> {
+    const gasUrl = this.getGasUrl();
+    const cacheKey = `p2tl_ganti_meter_targets_cache_${year}`;
+    const defaultTargets = Array(12).fill(50);
+
+    if (!gasUrl) {
+      const cached = localStorage.getItem(cacheKey);
+      return cached ? JSON.parse(cached) : defaultTargets;
+    }
+
+    try {
+      const url = `${gasUrl}?action=get_ganti_meter_targets&year=${year}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+
+      if (!response.ok) throw new Error();
+      const result = await response.json();
+      if (result.status === 'success' && Array.isArray(result.data)) {
+        const targets = Array(12).fill(50);
+        result.data.forEach((row: any) => {
+          const m = Number(row.Month) - 1;
+          if (m >= 0 && m < 12) {
+            targets[m] = Number(row.Target_Qty) || 0;
+          }
+        });
+        this.setCacheItem(cacheKey, JSON.stringify(targets));
+        return targets;
+      }
+      throw new Error();
+    } catch (error) {
+      console.warn("GAS fetch ganti meter targets failed. Using local cache:", error);
+      const cached = localStorage.getItem(cacheKey);
+      return cached ? JSON.parse(cached) : defaultTargets;
+    }
+  }
+
+  async saveGantiMeterTargets(year: string, targets: number[]): Promise<boolean> {
+    const cacheKey = `p2tl_ganti_meter_targets_cache_${year}`;
+    this.setCacheItem(cacheKey, JSON.stringify(targets));
+
+    const gasUrl = this.getGasUrl();
+    if (!gasUrl) return false;
+
+    try {
+      await fetch(gasUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'save_ganti_meter_targets',
+          year,
+          targets
+        })
+      });
+      return true;
+    } catch (error) {
+      console.error("Failed to POST ganti meter targets to Google Sheets:", error);
+      return false;
+    }
+  }
 }
+

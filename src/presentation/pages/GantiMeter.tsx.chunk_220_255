@@ -1,0 +1,44 @@
+Created At: 2026-06-07T01:13:25Z
+Completed At: 2026-06-07T01:13:25Z
+File Path: `file:///d:/Antigravity/p2tl/src/presentation/pages/GantiMeter.tsx`
+Total Lines: 956
+Total Bytes: 50580
+Showing lines 220 to 255
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+220:         setTargetStatus(prev => prev ? { ...prev, show: false } : null);
+221:       }, 4000);
+222:     }
+223:   };
+224: 
+225:   // Detail Modal
+226:   const [selectedRecord, setSelectedRecord] = useState<P2TLGantiMeterRecord | null>(null);
+227: 
+228:   // Search debounce
+229:   useEffect(() => {
+230:     const handler = setTimeout(() => {
+231:       setDebouncedSearch(searchTerm);
+232:       setCurrentPage(1);
+233:     }, 300);
+234:     return () => clearTimeout(handler);
+235:   }, [searchTerm]);
+236: 
+237:   // Fetch data
+238:   const fetchData = async () => {
+239:     setLoading(true);
+240:     setErrorMsg('');
+241:     try {
+242:       const isInitial = selectedMonth === '' && selectedYear === '';
+243:       const response = await p2tlRepository.getGantiMeter({
+244:         page: currentPage,
+245:         limit: itemsPerPage,
+246:         month: selectedMonth || undefined,
+247:         year: selectedYear || undefined,
+248:         search: debouncedSearch || undefined,
+249:         day: selectedDayDate || undefined,
+250:         sort: selectedSort,
+251:         smartDefault: isInitial ? 'true' : 'false'
+252:       });
+253: 
+254:       if (response.status === 'success') {
+255:         setRecords(response.records || []);
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

@@ -1,0 +1,67 @@
+Created At: 2026-06-07T01:13:28Z
+Completed At: 2026-06-07T01:13:28Z
+File Path: `file:///d:/Antigravity/p2tl/src/presentation/pages/GantiMeter.tsx`
+Total Lines: 956
+Total Bytes: 50580
+Showing lines 335 to 400
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+335:             {([
+336:               { key: 'realisasi', label: 'Realisasi' },
+337:               { key: 'target',    label: 'Target' },
+338:               { key: 'ringkasan', label: 'Ringkasan' },
+339:             ] as const).map(tab => (
+340:               <button
+341:                 key={tab.key}
+342:                 onClick={() => setSubTab(tab.key)}
+343:                 className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+344:                   subTab === tab.key
+345:                     ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-slate-800 shadow-sm'
+346:                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+347:                 }`}
+348:               >
+349:                 {tab.label}
+350:               </button>
+351:             ))}
+352:           </div>
+353: 
+354:           {/* Refresh */}
+355:           <button
+356:             onClick={fetchData}
+357:             disabled={loading}
+358:             className={`flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 ${borderRadius.xl} transition-all`}
+359:           >
+360:             <RotateCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+361:             <span>Refresh</span>
+362:           </button>
+363:         </div>
+364:       </div>
+365: 
+366:       {errorMsg && (
+367:         <div className="p-4
+<truncated 378 bytes>
+d} ${borderRadius.xl} border ${colors.border} flex items-center justify-between`}>
+377:           <div className="space-y-1">
+378:             <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Hari Ini</span>
+379:             <div className="text-xl font-black text-slate-800 dark:text-slate-50">{stats.todayCount} Unit</div>
+380:             <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Meter diganti hari ini</div>
+381:           </div>
+382:           <div className="p-3 bg-sky-500/10 text-sky-500 rounded-xl border border-sky-500/10">
+383:             <Clock className="w-6 h-6" />
+384:           </div>
+385:         </div>
+386: 
+387:         {/* Bulan Ini */}
+388:         <div className={`p-5 ${colors.card} ${borderRadius.xl} border ${colors.border} flex items-center justify-between`}>
+389:           <div className="space-y-1">
+390:             <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Bulan Ini</span>
+391:             <div className="text-xl font-black text-slate-800 dark:text-slate-50">{stats.monthCount} Unit</div>
+392:             <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Target: {targetPerBulan} unit</div>
+393:           </div>
+394:           {/* Mini progress ring */}
+395:           <div className="relative flex items-center justify-center" style={{ width: 56, height: 56 }}>
+396:             <svg width={56} height={56} className="transform -rotate-90">
+397:               <circle className="text-slate-200 dark:text-slate-800" strokeWidth={5} stroke="currentColor" fill="transparent" r={23} cx={28} cy={28} />
+398:               <circle
+399:                 className={`${bulanPercent >= 70 ? 'text-emerald-500' : 'text-amber-500'} transition-all duration-500`}
+400:                 strokeWidth={5}
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

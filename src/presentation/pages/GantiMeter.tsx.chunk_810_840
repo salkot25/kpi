@@ -1,0 +1,39 @@
+Created At: 2026-06-07T01:13:51Z
+Completed At: 2026-06-07T01:13:52Z
+File Path: `file:///d:/Antigravity/p2tl/src/presentation/pages/GantiMeter.tsx`
+Total Lines: 1027
+Total Bytes: 55223
+Showing lines 810 to 840
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+810:                             {formatIndoNumber(dailyAvg)} unit / hari
+811:                           </td>
+812:                         </tr>
+813:                       );
+814:                     })}
+815:                   </tbody>
+816:                 </table>
+817:               </div>
+818:             </div>
+819: 
+820:           </div>
+821:         );
+822:       })()}          <div
+823:                           className={`h-full bg-gradient-to-r ${BAR_COLORS[idx % BAR_COLORS.length]} shadow-[0_0_8px_rgba(16,185,129,0.2)] transition-all duration-500`}
+824:                           style={{ width: `${Math.min(100, (item.count / (reasonsBreakdown[0]?.count || 1)) * 100)}%` }}
+825:                         />
+826:                       </div>
+827:                     </div>
+828:                   );
+829:                 })}
+830:               </div>
+831:             )}
+832:           </div>
+833:         </div>
+834:       )}
+835: 
+836:       {/* ═══════════════════════════════════════════════════════════
+837:           TAB 3 — RINGKASAN
+838:       ═══════════════════════════════════════════════════════════ */}
+839:       {subTab === 'ringkasan' && (
+840:         <div className="space-y-6">
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

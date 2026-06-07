@@ -10,7 +10,6 @@ import {
   Layers,
   Wrench,
   Gauge,
-  Clock,
   TrendingUp,
   CheckCircle2,
   Zap,
@@ -76,10 +75,52 @@ function getWorkingDaysCount(monthIndex: number, yearStr: string, setting: '5' |
   return workingDays;
 }
 
+const ProgressRing: React.FC<{ percentage: number; size?: number; strokeWidth?: number; colorClass?: string }> = ({
+  percentage,
+  size = 56,
+  strokeWidth = 5,
+  colorClass = "text-emerald-500"
+}) => {
+  const cleanPercentage = Math.min(100, Math.max(0, percentage));
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (cleanPercentage / 100) * circumference;
+  
+  return (
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="transform -rotate-90">
+        <circle
+          className="text-slate-200 dark:text-slate-800"
+          strokeWidth={strokeWidth}
+          stroke="currentColor"
+          fill="transparent"
+          r={radius}
+          cx={size / 2}
+          cy={size / 2}
+        />
+        <circle
+          className={`${colorClass} transition-all duration-500 ease-out`}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          stroke="currentColor"
+          fill="transparent"
+          r={radius}
+          cx={size / 2}
+          cy={size / 2}
+        />
+      </svg>
+      <span className="absolute text-[10px] font-extrabold text-slate-800 dark:text-slate-100">{Math.round(percentage)}%</span>
+    </div>
+  );
+};
+
 export const GantiMeter: React.FC<GantiMeterProps> = () => {
   const [subTab, setSubTab] = useState<'realisasi' | 'target' | 'ringkasan'>('realisasi');
   const [records, setRecords] = useState<P2TLGantiMeterRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [tableDataLoaded, setTableDataLoaded] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
 
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -95,6 +136,8 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
 
   const [stats, setStats] = useState({ todayCount: 0, monthCount: 0, yearCount: 0 });
   const [reasonsBreakdown, setReasonsBreakdown] = useState<Array<{ reason: string; count: number }>>([]);
+  const [cumulativeReasonsBreakdown, setCumulativeReasonsBreakdown] = useState<Array<{ reason: string; count: number }>>([]);
+  const [totalCumulativeFiltered, setTotalCumulativeFiltered] = useState<number>(0);
   const [availableYears, setAvailableYears] = useState<string[]>([String(new Date().getFullYear())]);
 
   const activeWorkingDays = '5';
@@ -176,10 +219,14 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
     }
   };
 
-  const activeYear = selectedYear && selectedYear !== 'all' ? selectedYear : String(new Date().getFullYear());
-  const activeMonthIndex = selectedMonth && selectedMonth !== 'all'
-    ? parseInt(selectedMonth, 10) - 1
-    : new Date().getMonth();
+  const activeYear = subTab === 'realisasi'
+    ? String(new Date().getFullYear())
+    : (selectedYear && selectedYear !== 'all' ? selectedYear : String(new Date().getFullYear()));
+  const activeMonthIndex = subTab === 'realisasi'
+    ? new Date().getMonth()
+    : (selectedMonth && selectedMonth !== 'all'
+      ? parseInt(selectedMonth, 10) - 1
+      : new Date().getMonth());
 
   useEffect(() => {
     const loadActiveTargets = async () => {
@@ -196,6 +243,39 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
   const targetPerBulan = activeYearTargets[activeMonthIndex] || 50;
   const bulanPercent = targetPerBulan > 0 ? Math.min(100, Math.round((stats.monthCount / targetPerBulan) * 100)) : 0;
 
+  const isDateWorkingDay = (year: number, monthIndex: number, day: number, setting: '5' | '6' | '7'): boolean => {
+    const date = new Date(year, monthIndex, day);
+    const dayOfWeek = date.getDay();
+    if (setting === '5') {
+      return dayOfWeek !== 0 && dayOfWeek !== 6;
+    } else if (setting === '6') {
+      return dayOfWeek !== 0;
+    }
+    return true;
+  };
+
+  const todayObj = new Date();
+  const isTodayWorking = isDateWorkingDay(todayObj.getFullYear(), todayObj.getMonth(), todayObj.getDate(), activeWorkingDays);
+  const workingDaysCountForTodayMonth = getWorkingDaysCount(todayObj.getMonth(), String(todayObj.getFullYear()), activeWorkingDays);
+  const targetThisMonth = activeYearTargets[todayObj.getMonth()] || 50;
+  const targetHarianCalculated = isTodayWorking && workingDaysCountForTodayMonth > 0 ? Math.round(targetThisMonth / workingDaysCountForTodayMonth) : 0;
+  const harianPercent = targetHarianCalculated > 0 ? Math.min(100, Math.round((stats.todayCount / targetHarianCalculated) * 100)) : 0;
+
+  const isSemester1 = activeMonthIndex <= 5;
+  const semesterLabel = isSemester1 ? 'Semester I' : 'Semester II';
+  const targetSemester = isSemester1
+    ? activeYearTargets.slice(0, 6).reduce((sum, val) => sum + val, 0)
+    : activeYearTargets.slice(6, 12).reduce((sum, val) => sum + val, 0);
+
+  const realSemester = isSemester1
+    ? (monthlyTrend || []).slice(0, 6).reduce((sum, item) => sum + (item?.count || 0), 0)
+    : (monthlyTrend || []).slice(6, 12).reduce((sum, item) => sum + (item?.count || 0), 0);
+  const semesterPercent = targetSemester > 0 ? Math.min(100, Math.round((realSemester / targetSemester) * 100)) : 0;
+
+  const targetKumulatif = activeYearTargets.slice(0, activeMonthIndex + 1).reduce((sum, val) => sum + val, 0);
+  const realKumulatif = (monthlyTrend || []).slice(0, activeMonthIndex + 1).reduce((sum, item) => sum + (item?.count || 0), 0);
+  const kumulatifPercent = targetKumulatif > 0 ? Math.min(100, Math.round((realKumulatif / targetKumulatif) * 100)) : 0;
+
   const [selectedRecord, setSelectedRecord] = useState<P2TLGantiMeterRecord | null>(null);
 
   useEffect(() => {
@@ -211,15 +291,19 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
     setErrorMsg('');
     try {
       const isInitial = selectedMonth === '' && selectedYear === '';
+      const useCurrentMonth = subTab === 'realisasi';
+      const curYear = String(new Date().getFullYear());
+      const curMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+
       const response = await p2tlRepository.getGantiMeter({
         page: currentPage,
         limit: itemsPerPage,
-        month: selectedMonth || undefined,
-        year: selectedYear || undefined,
-        search: debouncedSearch || undefined,
-        day: selectedDayDate || undefined,
+        month: useCurrentMonth ? curMonth : (selectedMonth || undefined),
+        year: useCurrentMonth ? curYear : (selectedYear || undefined),
+        search: useCurrentMonth ? undefined : (debouncedSearch || undefined),
+        day: useCurrentMonth ? undefined : (selectedDayDate || undefined),
         sort: selectedSort,
-        smartDefault: isInitial ? 'true' : 'false'
+        smartDefault: (isInitial && !useCurrentMonth) ? 'true' : 'false'
       });
 
       if (response.status === 'success') {
@@ -231,6 +315,8 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
           yearCount: response.stats.yearCount || 0
         });
         if (response.reasonsBreakdown) setReasonsBreakdown(response.reasonsBreakdown);
+        if (response.cumulativeReasonsBreakdown) setCumulativeReasonsBreakdown(response.cumulativeReasonsBreakdown);
+        if (response.totalCumulativeFiltered !== undefined) setTotalCumulativeFiltered(response.totalCumulativeFiltered);
         if (response.availableYears) setAvailableYears(response.availableYears);
         if (response.dailyTrend) setDailyTrend(response.dailyTrend);
         if (response.weeklyTrend) setWeeklyTrend(response.weeklyTrend);
@@ -251,7 +337,7 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
 
   useEffect(() => {
     fetchData();
-  }, [currentPage, itemsPerPage, debouncedSearch, selectedMonth, selectedYear, selectedDayDate, selectedSort]);
+  }, [subTab, currentPage, itemsPerPage, debouncedSearch, selectedMonth, selectedYear, selectedDayDate, selectedSort]);
 
   const handleResetFilters = () => {
     setSearchTerm('');
@@ -328,59 +414,48 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
       )}
 
       {/* ── SUMMARY STAT CARDS (always visible) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-        {/* Hari Ini */}
+        {/* Kinerja Harian */}
         <div className={`p-5 ${colors.card} ${borderRadius.xl} border ${colors.border} flex items-center justify-between`}>
           <div className="space-y-1">
-            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Hari Ini</span>
-            <div className="text-xl font-black text-slate-800 dark:text-slate-50">{stats.todayCount} Unit</div>
-            <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Meter diganti hari ini</div>
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kinerja Harian</span>
+            <div className="text-xl font-black text-slate-800 dark:text-slate-50">{formatIndoNumber(stats.todayCount)} Unit</div>
+            <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Target: {formatIndoNumber(targetHarianCalculated)} Unit</div>
           </div>
-          <div className="p-3 bg-sky-500/10 text-sky-500 rounded-xl border border-sky-500/10">
-            <Clock className="w-6 h-6" />
-          </div>
+          <ProgressRing percentage={harianPercent} colorClass={harianPercent >= 100 ? "text-emerald-500" : harianPercent >= 50 ? "text-amber-500" : "text-rose-500"} />
         </div>
 
-        {/* Bulan Ini */}
+        {/* Kinerja Bulanan */}
         <div className={`p-5 ${colors.card} ${borderRadius.xl} border ${colors.border} flex items-center justify-between`}>
           <div className="space-y-1">
-            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Bulan Ini</span>
-            <div className="text-xl font-black text-slate-800 dark:text-slate-50">{stats.monthCount} Unit</div>
-            <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Target: {targetPerBulan} unit</div>
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kinerja Bulanan</span>
+            <div className="text-xl font-black text-slate-800 dark:text-slate-50">{formatIndoNumber(stats.monthCount)} Unit</div>
+            <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Target: {formatIndoNumber(targetPerBulan)} Unit ({MONTH_NAMES_ID[activeMonthIndex]})</div>
           </div>
-          {/* Mini progress ring */}
-          <div className="relative flex items-center justify-center" style={{ width: 56, height: 56 }}>
-            <svg width={56} height={56} className="transform -rotate-90">
-              <circle className="text-slate-200 dark:text-slate-800" strokeWidth={5} stroke="currentColor" fill="transparent" r={23} cx={28} cy={28} />
-              <circle
-                className={`${bulanPercent >= 70 ? 'text-emerald-500' : 'text-amber-500'} transition-all duration-500`}
-                strokeWidth={5}
-                strokeDasharray={`${(bulanPercent / 100) * 144.51} 144.51`}
-                strokeDashoffset={0}
-                strokeLinecap="round"
-                stroke="currentColor"
-                fill="transparent"
-                r={23}
-                cx={28}
-                cy={28}
-              />
-            </svg>
-            <span className="absolute text-[9px] font-extrabold text-slate-800 dark:text-slate-100">{bulanPercent}%</span>
-          </div>
+          <ProgressRing percentage={bulanPercent} colorClass={bulanPercent >= 70 ? "text-emerald-500" : "text-amber-500"} />
         </div>
 
-        {/* Tahun Ini */}
+        {/* Kinerja Semester */}
         <div className={`p-5 ${colors.card} ${borderRadius.xl} border ${colors.border} flex items-center justify-between`}>
           <div className="space-y-1">
-            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Tahun Ini</span>
-            <div className="text-xl font-black text-slate-800 dark:text-slate-50">{stats.yearCount} Unit</div>
-            <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Total penggantian tahunan</div>
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kinerja {semesterLabel}</span>
+            <div className="text-xl font-black text-slate-800 dark:text-slate-50">{formatIndoNumber(realSemester)} Unit</div>
+            <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Target: {formatIndoNumber(targetSemester)} Unit</div>
           </div>
-          <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl border border-emerald-500/10">
-            <TrendingUp className="w-6 h-6" />
-          </div>
+          <ProgressRing percentage={semesterPercent} colorClass={semesterPercent >= 70 ? "text-emerald-500" : "text-amber-500"} />
         </div>
+
+        {/* Kinerja Kumulatif */}
+        <div className={`p-5 ${colors.card} ${borderRadius.xl} border ${colors.border} flex items-center justify-between`}>
+          <div className="space-y-1">
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Kinerja Kumulatif</span>
+            <div className="text-xl font-black text-slate-800 dark:text-slate-50">{formatIndoNumber(realKumulatif)} Unit</div>
+            <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Target: {formatIndoNumber(targetKumulatif)} Unit</div>
+          </div>
+          <ProgressRing percentage={kumulatifPercent} colorClass={kumulatifPercent >= 70 ? "text-emerald-500" : "text-amber-500"} />
+        </div>
+
       </div>
 
       {subTab === 'ringkasan' && (
@@ -442,7 +517,7 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
           {/* Reasons Breakdown Chart */}
-          <div className={`lg:col-span-4 p-6 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md} flex flex-col`}>
+          <div className={`lg:col-span-4 p-6 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md} flex flex-col h-[380px]`}>
             <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-1 flex items-center gap-2">
               <BarChart2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
               <span>Komposisi Alasan</span>
@@ -451,19 +526,19 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
               Pemicu utama penggantian kWh meter
             </p>
 
-            {reasonsBreakdown.length === 0 ? (
+            {cumulativeReasonsBreakdown.length === 0 ? (
               <div className="flex-grow flex items-center justify-center py-12 text-slate-500 text-xs font-semibold text-center">
                 Tidak ada data untuk filter aktif.
               </div>
             ) : (
               <div className="space-y-3 overflow-y-auto pr-1 flex-grow">
-                {reasonsBreakdown.map((item, idx) => {
-                  const maxCount = reasonsBreakdown[0]?.count || 1;
-                  const percent = totalFiltered > 0 ? Math.round((item.count / totalFiltered) * 100) : 0;
+                {cumulativeReasonsBreakdown.map((item, idx) => {
+                  const maxCount = cumulativeReasonsBreakdown[0]?.count || 1;
+                  const percent = totalCumulativeFiltered > 0 ? Math.round((item.count / totalCumulativeFiltered) * 100) : 0;
                   return (
                     <div key={item.reason} className="group">
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <span className="text-[11px] font-semibold text-slate-750 dark:text-slate-300 leading-tight">{item.reason}</span>
+                        <span className="text-[11px] font-semibold text-slate-755 dark:text-slate-300 leading-tight">{item.reason}</span>
                         <span className="text-[11px] font-bold text-slate-555 dark:text-slate-400 whitespace-nowrap shrink-0">
                           {item.count} <span className="text-emerald-500 dark:text-emerald-400">({percent}%)</span>
                         </span>
@@ -482,9 +557,9 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
           </div>
 
           {/* Trend Charts */}
-          <div className="lg:col-span-8 space-y-6">
+          <div className="lg:col-span-8 space-y-6 h-[380px]">
             {/* Custom SVG Trend Chart */}
-            <div className={`p-6 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md} flex flex-col relative min-h-[300px]`}>
+            <div className={`p-6 ${colors.card} ${borderRadius.xxl} border ${colors.border} ${shadows.md} flex flex-col relative h-full`}>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 pb-2 border-b border-slate-200 dark:border-slate-800">
                 <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
@@ -904,112 +979,134 @@ export const GantiMeter: React.FC<GantiMeterProps> = () => {
                   </p>
                 </div>
               </div>
-
-              <div className="flex-grow overflow-x-auto">
-                {loading ? (
-                  <div className="flex flex-col items-center justify-center py-20 gap-3">
-                    <svg className="animate-spin h-7 w-7 text-emerald-400" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    <span className="text-xs font-bold text-slate-505 animate-pulse">Memuat data...</span>
+              {!tableDataLoaded ? (
+                <div className="flex-grow flex flex-col items-center justify-center py-16 px-4 text-center space-y-4">
+                  <div className="p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full w-12 h-12 flex items-center justify-center border border-emerald-500/10">
+                    <Layers className="w-6 h-6 animate-pulse" />
                   </div>
-                ) : records.length === 0 ? (
-                  <div className="text-center py-20 text-slate-505 text-xs font-semibold">Tidak ada data ditemukan.</div>
-                ) : (
-                  <table className="w-full text-left border-collapse min-w-[560px]">
-                    <thead>
-                      <tr className="border-b-2 border-slate-100 dark:border-slate-800 text-[10px] font-black uppercase text-slate-405 tracking-widest">
-                        <th className="py-2.5 px-3 w-8">#</th>
-                        <th className="py-2.5 px-3">IDPEL / NAMA</th>
-                        <th className="py-2.5 px-3">ALASAN PENGGANTIAN</th>
-                        <th className="py-2.5 px-3">METER BARU</th>
-                        <th className="py-2.5 px-3 text-center w-12">AKSI</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {records.map((rec, index) => {
-                        const rowNo = (currentPage - 1) * itemsPerPage + index + 1;
-                        return (
-                          <tr key={rec.noagenda + '-' + rec.idpel}
-                            className="border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-55 dark:hover:bg-slate-900/40 transition-colors">
-                            <td className="py-3 px-3 text-xs font-bold text-slate-300 dark:text-slate-600">{rowNo}</td>
-                            <td className="py-3 px-3">
-                              <div className="text-xs font-extrabold text-slate-800 dark:text-slate-100">{rec.idpel}</div>
-                              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5 truncate max-w-[180px]">{rec.nama}</div>
-                            </td>
-                            <td className="py-3 px-3">
-                              <span className="inline-block px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase">
-                                {rec.alasanGantiMeter || 'Lainnya'}
-                              </span>
-                            </td>
-                            <td className="py-3 px-3">
-                              <div className="text-xs font-bold text-slate-700 dark:text-slate-200">{rec.noMeterBaru || '-'}</div>
-                              <div className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wide mt-0.5">{rec.merkMeterBaru || '-'}</div>
-                            </td>
-                            <td className="py-3 px-3 text-center">
-                              <button onClick={() => setSelectedRecord(rec)}
-                                className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-emerald-500 rounded-lg transition-colors inline-flex items-center justify-center"
-                                title="Lihat Detail">
-                                <Eye className="w-4 h-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-
-              {/* Pagination */}
-              {totalFiltered > 0 && (
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 mt-3 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Baris:</span>
-                    <select value={itemsPerPage} onChange={e => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
-                      className="px-2 py-1 text-[10px] font-bold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 outline-none">
-                      {[5, 10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
-                    </select>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      {(currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, totalFiltered)} dari <span className="font-bold text-slate-600 dark:text-slate-300">{totalFiltered}</span>
-                    </span>
+                  <div className="space-y-1 max-w-sm">
+                    <h4 className="text-xs font-bold text-slate-805 dark:text-slate-105">Daftar Data Belum Dimuat</h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal font-semibold">
+                      Daftar ini berisi ribuan baris data penggantian. Klik tombol di bawah untuk menampilkan daftar data dan paginasi.
+                    </p>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}
-                      className="p-1.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none text-slate-555 transition-colors">
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                    </button>
-                    {(() => {
-                      const pages: number[] = [];
-                      if (totalPages <= 5) { for (let i = 1; i <= totalPages; i++) pages.push(i); }
-                      else {
-                        pages.push(1);
-                        let start = Math.max(2, currentPage - 1);
-                        let end = Math.min(totalPages - 1, currentPage + 1);
-                        if (currentPage <= 2) end = 4;
-                        else if (currentPage >= totalPages - 1) start = totalPages - 3;
-                        if (start > 2) pages.push(-1);
-                        for (let i = start; i <= end; i++) pages.push(i);
-                        if (end < totalPages - 1) pages.push(-2);
-                        pages.push(totalPages);
-                      }
-                      return pages.map((p, i) => p < 0
-                        ? <span key={`e${i}`} className="px-1 text-slate-300 text-xs">…</span>
-                        : <button key={`p${p}`} onClick={() => handlePageChange(p)}
-                            className={`min-w-[28px] h-7 px-1.5 text-xs font-bold rounded-lg border transition-all ${
-                              currentPage === p
-                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
-                                : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-300'
-                            }`}>{p}</button>
-                      );
-                    })()}
-                    <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}
-                      className="p-1.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none text-slate-555 transition-colors">
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setTableDataLoaded(true)}
+                    className="px-6 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-500/10 dark:shadow-none transition-all flex items-center justify-center gap-2"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
+                    <span>Muat Daftar Data</span>
+                  </button>
                 </div>
+              ) : (
+                <>
+                  <div className="flex-grow overflow-x-auto">
+                    {loading ? (
+                      <div className="flex flex-col items-center justify-center py-20 gap-3">
+                        <svg className="animate-spin h-7 w-7 text-emerald-400" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        <span className="text-xs font-bold text-slate-505 animate-pulse">Memuat data...</span>
+                      </div>
+                    ) : records.length === 0 ? (
+                      <div className="text-center py-20 text-slate-505 text-xs font-semibold">Tidak ada data ditemukan.</div>
+                    ) : (
+                      <table className="w-full text-left border-collapse min-w-[560px]">
+                        <thead>
+                          <tr className="border-b-2 border-slate-100 dark:border-slate-800 text-[10px] font-black uppercase text-slate-405 tracking-widest">
+                            <th className="py-2.5 px-3 w-8">#</th>
+                            <th className="py-2.5 px-3">IDPEL / NAMA</th>
+                            <th className="py-2.5 px-3">ALASAN PENGGANTIAN</th>
+                            <th className="py-2.5 px-3">METER BARU</th>
+                            <th className="py-2.5 px-3 text-center w-12">AKSI</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {records.map((rec, index) => {
+                            const rowNo = (currentPage - 1) * itemsPerPage + index + 1;
+                            return (
+                              <tr key={rec.noagenda + '-' + rec.idpel}
+                                className="border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-55 dark:hover:bg-slate-900/40 transition-colors">
+                                <td className="py-3 px-3 text-xs font-bold text-slate-300 dark:text-slate-600">{rowNo}</td>
+                                <td className="py-3 px-3">
+                                  <div className="text-xs font-extrabold text-slate-800 dark:text-slate-100">{rec.idpel}</div>
+                                  <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5 truncate max-w-[180px]">{rec.nama}</div>
+                                </td>
+                                <td className="py-3 px-3">
+                                  <span className="inline-block px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase">
+                                    {rec.alasanGantiMeter || 'Lainnya'}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-3">
+                                  <div className="text-xs font-bold text-slate-700 dark:text-slate-200">{rec.noMeterBaru || '-'}</div>
+                                  <div className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wide mt-0.5">{rec.merkMeterBaru || '-'}</div>
+                                </td>
+                                <td className="py-3 px-3 text-center">
+                                  <button onClick={() => setSelectedRecord(rec)}
+                                    className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-emerald-500 rounded-lg transition-colors inline-flex items-center justify-center"
+                                    title="Lihat Detail">
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+
+                  {/* Pagination */}
+                  {totalFiltered > 0 && (
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 mt-3 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Baris:</span>
+                        <select value={itemsPerPage} onChange={e => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                          className="px-2 py-1 text-[10px] font-bold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 outline-none">
+                          {[5, 10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {(currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, totalFiltered)} dari <span className="font-bold text-slate-600 dark:text-slate-300">{totalFiltered}</span>
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}
+                          className="p-1.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none text-slate-555 transition-colors">
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </button>
+                        {(() => {
+                          const pages: number[] = [];
+                          if (totalPages <= 5) { for (let i = 1; i <= totalPages; i++) pages.push(i); }
+                          else {
+                            pages.push(1);
+                            let start = Math.max(2, currentPage - 1);
+                            let end = Math.min(totalPages - 1, currentPage + 1);
+                            if (currentPage <= 2) end = 4;
+                            else if (currentPage >= totalPages - 1) start = totalPages - 3;
+                            if (start > 2) pages.push(-1);
+                            for (let i = start; i <= end; i++) pages.push(i);
+                            if (end < totalPages - 1) pages.push(-2);
+                            pages.push(totalPages);
+                          }
+                          return pages.map((p, i) => p < 0
+                            ? <span key={`e${i}`} className="px-1 text-slate-300 text-xs">…</span>
+                            : <button key={`p${p}`} onClick={() => handlePageChange(p)}
+                                className={`min-w-[28px] h-7 px-1.5 text-xs font-bold rounded-lg border transition-all ${
+                                  currentPage === p
+                                    ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
+                                    : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-300'
+                                }`}>{p}</button>
+                          );
+                        })()}
+                        <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}
+                          className="p-1.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none text-slate-555 transition-colors">
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

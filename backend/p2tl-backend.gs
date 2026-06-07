@@ -135,14 +135,7 @@ function isDateObject(val) {
 // Helper to parse dates in format DD/MM/YYYY, D/M/YYYY, ISO, or Date objects timezone-safely
 function parseDateRegister(cellValue) {
   if (isDateObject(cellValue)) {
-    try {
-      var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
-      var dateStr = Utilities.formatDate(cellValue, tz, "yyyy-MM-dd");
-      var parts = dateStr.split('-');
-      return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-    } catch (e) {
-      return cellValue;
-    }
+    return new Date(cellValue.getTime());
   }
   
   var str = String(cellValue).trim();
@@ -179,6 +172,19 @@ function parseDateRegister(cellValue) {
   }
   
   return null;
+}
+
+// Fast timezone-safe date formatting using native JS properties instead of slow Utilities.formatDate
+function fastFormatDate(dateObj) {
+  if (!dateObj) return "";
+  try {
+    var y = dateObj.getFullYear();
+    var m = dateObj.getMonth() + 1;
+    var d = dateObj.getDate();
+    return y + "-" + (m < 10 ? "0" : "") + m + "-" + (d < 10 ? "0" : "") + d;
+  } catch (e) {
+    return "";
+  }
 }
 
 // Helper to parse numeric values with potential dots as thousand separators
@@ -385,8 +391,8 @@ function doGet(e) {
     var refMonth = parseInt(nowParts[1], 10) - 1; // 0-indexed
     var refDay = parseInt(nowParts[2], 10);
     
-    // ── PASS 1: Build all records, collect global stats & metadata ──
-    var allRecords = [];
+    // ── PASS 1: Read raw dates for global stats & filters, available years ──
+    var allRows = [];
     var todayCount = 0;
     var monthCount = 0;
     var yearCount = 0;
@@ -395,52 +401,39 @@ function doGet(e) {
     var latestYearStr = "";
     var latestMonthStr = "";
     
+    var idxTglRemaja = colMap["TGLREMAJA"];
+    
     for (var r = 1; r < data.length; r++) {
       var row = data[r];
-      var record = {};
       var hasData = false;
-      
-      for (var c = 0; c < targetCols.length; c++) {
-        var col2 = targetCols[c];
-        var idx = colMap[col2];
-        var val = idx !== -1 ? row[idx] : "";
-        if (val !== "") hasData = true;
-        
-        if ((col2 === "TGLREMAJA" || col2 === "TGLNYALA") && val) {
-          var pd = parseDateRegister(val);
-          if (pd) {
-            record[col2] = Utilities.formatDate(pd, tz, "yyyy-MM-dd");
-          } else {
-            record[col2] = String(val).trim();
-          }
-        } else if (isDateObject(val)) {
-          record[col2] = Utilities.formatDate(val, tz, "yyyy-MM-dd");
-        } else {
-          record[col2] = String(val).trim();
+      for (var c = 0; c < row.length; c++) {
+        if (row[c] !== "") {
+          hasData = true;
+          break;
         }
       }
       if (!hasData) continue;
       
-      // Parse record date for stats & filtering (use TGLREMAJA only)
-      var recDateStr = record["TGLREMAJA"] || "";
-      var recDate = recDateStr ? parseDateRegister(recDateStr) : null;
+      var rawDate = idxTglRemaja !== -1 ? row[idxTglRemaja] : null;
+      var recDate = parseDateRegister(rawDate);
       var ry = null, rm = null, rd = null;
       var recTs = 0;
+      var recDateStr = "";
+      
       if (recDate) {
         ry = recDate.getFullYear();
         rm = recDate.getMonth(); // 0-indexed
         rd = recDate.getDate();
         recTs = recDate.getTime();
+        recDateStr = ry + "-" + (rm + 1 < 10 ? "0" : "") + (rm + 1) + "-" + (rd < 10 ? "0" : "") + rd;
         availableYearsSet[String(ry)] = true;
         
-        // Track latest record
         if (!latestDate || recDate > latestDate) {
           latestDate = recDate;
           latestYearStr = String(ry);
           latestMonthStr = (rm + 1 < 10 ? "0" : "") + String(rm + 1);
         }
         
-        // Global stats (always counted regardless of filters)
         if (ry === refYear) {
           yearCount++;
           if (rm === refMonth) {
@@ -449,13 +442,15 @@ function doGet(e) {
           }
         }
       }
-      // Attach parsed date info to record for filter pass
-      record._ry = ry;
-      record._rm = rm;
-      record._dateStr = recDateStr;
-      record._ts = recTs;
-      record._rowIndex = r;
-      allRecords.push(record);
+      
+      allRows.push({
+        row: row,
+        _ry: ry,
+        _rm: rm,
+        _dateStr: recDateStr,
+        _ts: recTs,
+        _rowIndex: r
+      });
     }
     
     // ── Determine applied filters (smart default logic) ──
@@ -472,47 +467,60 @@ function doGet(e) {
       }
     }
     
-    // ── PASS 2: Filter records ──
-    var filteredRecords = [];
+    // ── PASS 2: Filter raw rows ──
+    var filteredRows = [];
     var reasonsMap = {};
     
-    for (var fi = 0; fi < allRecords.length; fi++) {
-      var rec = allRecords[fi];
+    var idxAlasan = colMap["ALASAN_GANTI_METER"];
+    var idxNoAgenda = colMap["NOAGENDA"];
+    var idxIdpel = colMap["IDPEL"];
+    var idxNama = colMap["NAMA"];
+    var idxAlamat = colMap["ALAMAT"];
+    
+    for (var fi = 0; fi < allRows.length; fi++) {
+      var item = allRows[fi];
       
       // Day filter (overrides month/year)
       if (filterDay) {
-        if ((rec._dateStr || "") !== filterDay) continue;
+        if ((item._dateStr || "") !== filterDay) continue;
       } else {
         // Month filter (1-indexed string "01"-"12")
         if (appliedMonth && appliedMonth !== "all") {
           var fmVal = parseInt(appliedMonth, 10) - 1;
-          if (rec._rm === null || rec._rm !== fmVal) continue;
+          if (item._rm === null || item._rm !== fmVal) continue;
         }
         // Year filter
         if (appliedYear && appliedYear !== "all") {
           var fyVal = parseInt(appliedYear, 10);
-          if (rec._ry === null || rec._ry !== fyVal) continue;
+          if (item._ry === null || item._ry !== fyVal) continue;
         }
       }
       
       // Search filter
       if (filterSearch) {
+        var row = item.row;
         var haystack = [
-          rec["NOAGENDA"] || "", rec["IDPEL"] || "", rec["NAMA"] || "",
-          rec["ALAMAT"] || "", rec["ALASAN_GANTI_METER"] || ""
+          idxNoAgenda !== -1 ? row[idxNoAgenda] : "",
+          idxIdpel !== -1 ? row[idxIdpel] : "",
+          idxNama !== -1 ? row[idxNama] : "",
+          idxAlamat !== -1 ? row[idxAlamat] : "",
+          idxAlasan !== -1 ? row[idxAlasan] : ""
         ].join(" ").toLowerCase();
         if (haystack.indexOf(filterSearch) === -1) continue;
       }
       
       // Passed all filters
-      var reason = (rec["ALASAN_GANTI_METER"] || "Lainnya").trim();
+      var reason = "";
+      if (idxAlasan !== -1) {
+        reason = String(item.row[idxAlasan] || "").trim();
+      }
       if (!reason) reason = "Lainnya";
       reasonsMap[reason] = (reasonsMap[reason] || 0) + 1;
-      filteredRecords.push(rec);
+      filteredRows.push(item);
     }
 
     // ── Server-side sort ──
-    filteredRecords.sort(function(a, b) {
+    filteredRows.sort(function(a, b) {
       var at = Number(a._ts || 0);
       var bt = Number(b._ts || 0);
       if (at !== bt) {
@@ -577,13 +585,13 @@ function doGet(e) {
     // Initialize weekly trend map
     var weeklyMap = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     
-    // Count matches in filteredRecords
-    for (var fi = 0; fi < filteredRecords.length; fi++) {
-      var rec = filteredRecords[fi];
-      var recYear = rec._ry;
-      var recMonth = rec._rm;
-      if (recYear === targetYearInt && recMonth === targetMonthInt && rec._dateStr) {
-        var recDate = parseDateRegister(rec._dateStr);
+    // Count matches in filteredRows
+    for (var fi = 0; fi < filteredRows.length; fi++) {
+      var item = filteredRows[fi];
+      var recYear = item._ry;
+      var recMonth = item._rm;
+      if (recYear === targetYearInt && recMonth === targetMonthInt && item._dateStr) {
+        var recDate = parseDateRegister(item.row[idxTglRemaja]);
         if (recDate) {
           var dayNum = recDate.getDate();
           if (dayNum >= 1 && dayNum <= daysCount) {
@@ -649,10 +657,10 @@ function doGet(e) {
       monthlyMap[m] = 0;
     }
     
-    for (var fi = 0; fi < allRecords.length; fi++) {
-      var rec = allRecords[fi];
-      if (rec._ry === targetYearInt && rec._rm !== null) {
-        monthlyMap[rec._rm]++;
+    for (var fi = 0; fi < allRows.length; fi++) {
+      var item = allRows[fi];
+      if (item._ry === targetYearInt && item._rm !== null) {
+        monthlyMap[item._rm]++;
       }
     }
     
@@ -664,21 +672,64 @@ function doGet(e) {
       });
     }
 
+    // ── Calculate cumulative reasons breakdown (for the entire calendar year) ──
+    var cumulativeReasonsMap = {};
+    var totalCumulativeFiltered = 0;
+    for (var fi = 0; fi < allRows.length; fi++) {
+      var item = allRows[fi];
+      if (item._ry === targetYearInt && item._rm !== null) {
+        var reason = "";
+        if (idxAlasan !== -1) {
+          reason = String(item.row[idxAlasan] || "").trim();
+        }
+        if (!reason) reason = "Lainnya";
+        cumulativeReasonsMap[reason] = (cumulativeReasonsMap[reason] || 0) + 1;
+        totalCumulativeFiltered++;
+      }
+    }
+    
+    var cumulativeReasonsList = [];
+    for (var crk in cumulativeReasonsMap) {
+      if (cumulativeReasonsMap.hasOwnProperty(crk)) {
+        cumulativeReasonsList.push({ reason: crk, count: cumulativeReasonsMap[crk] });
+      }
+    }
+    cumulativeReasonsList.sort(function(a, b) { return b.count - a.count; });
+
     // ── Paginate ──
-    var totalFiltered = filteredRecords.length;
+    var totalFiltered = filteredRows.length;
     var totalPages = Math.ceil(totalFiltered / limitParam) || 1;
     if (pageParam > totalPages) pageParam = totalPages;
     if (pageParam < 1) pageParam = 1;
     var startIdx = (pageParam - 1) * limitParam;
-    var pageRecords = filteredRecords.slice(startIdx, startIdx + limitParam);
+    var pageItems = filteredRows.slice(startIdx, startIdx + limitParam);
     
-    // Clean internal fields before sending
-    for (var ci = 0; ci < pageRecords.length; ci++) {
-      delete pageRecords[ci]._ry;
-      delete pageRecords[ci]._rm;
-      delete pageRecords[ci]._dateStr;
-      delete pageRecords[ci]._ts;
-      delete pageRecords[ci]._rowIndex;
+    // ONLY build and format the records that are returned for this page slice
+    var pageRecords = [];
+    for (var pi = 0; pi < pageItems.length; pi++) {
+      var item = pageItems[pi];
+      var row = item.row;
+      var record = {};
+      
+      for (var c = 0; c < targetCols.length; c++) {
+        var col2 = targetCols[c];
+        var idx = colMap[col2];
+        var val = idx !== -1 ? row[idx] : "";
+        
+        if ((col2 === "TGLREMAJA" || col2 === "TGLNYALA") && val) {
+          var pd = parseDateRegister(val);
+          if (pd) {
+            record[col2] = fastFormatDate(pd);
+          } else {
+            record[col2] = String(val).trim();
+          }
+        } else if (isDateObject(val)) {
+          record[col2] = fastFormatDate(val);
+        } else {
+          record[col2] = String(val).trim();
+        }
+      }
+      pageRecords.push(record);
     }
     
     return ContentService.createTextOutput(JSON.stringify({
@@ -696,6 +747,8 @@ function doGet(e) {
         yearCount: yearCount
       },
       reasonsBreakdown: reasonsList,
+      cumulativeReasonsBreakdown: cumulativeReasonsList,
+      totalCumulativeFiltered: totalCumulativeFiltered,
       availableYears: availableYears,
       appliedMonth: appliedMonth,
       appliedYear: appliedYear,

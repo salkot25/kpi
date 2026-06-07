@@ -148,6 +148,8 @@ export interface P2TLGantiMeterResponse {
     yearCount: number;
   };
   reasonsBreakdown: Array<{ reason: string; count: number }>;
+  cumulativeReasonsBreakdown?: Array<{ reason: string; count: number }>;
+  totalCumulativeFiltered?: number;
   availableYears: string[];
   appliedMonth: string;
   appliedYear: string;

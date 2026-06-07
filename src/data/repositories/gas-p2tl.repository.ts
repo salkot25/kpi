@@ -549,6 +549,8 @@ export class GasP2TLRepository implements IP2TLRepository {
       pagination: { page: 1, limit: 10, totalFiltered: 0, totalPages: 0 },
       stats: { todayCount: 0, monthCount: 0, yearCount: 0 },
       reasonsBreakdown: [],
+      cumulativeReasonsBreakdown: [],
+      totalCumulativeFiltered: 0,
       availableYears: [curYear],
       appliedMonth: curMonth,
       appliedYear: curYear,
